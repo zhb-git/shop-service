@@ -511,6 +511,10 @@ public class ShopCardServiceImpl extends ServiceImpl<ShopCardMapper, ShopCard> i
     public String cardTransfer(ShopInfo shopInfo, ShopCardTransferQuery query, VsCardTransferType transferType) {
         // 校验卡片
         ShopCard card = checkCard(shopInfo.getId(), query.getCardId());
+        // 校验卡片状态
+        if (VsCardStatus.NORMAL.getValue() != card.getStatus()) {
+            throw new BizException("当前状态不可转账");
+        }
         // 转账类型
         if (VsCardTransferType.TRANSFER_IN.equals(transferType)) {
             // 商户扣款
