@@ -436,6 +436,10 @@ public class ShopCardServiceImpl extends ServiceImpl<ShopCardMapper, ShopCard> i
     public String unfreezeCard(ShopInfo shopInfo, ShopUnfreezeCardQuery query) {
         // 校验卡片
         ShopCard card = checkCard(shopInfo.getId(), query.getCardId());
+        // 校验状态
+        if (VsCardStatus.CANCELLED.getValue() != card.getStatus()) {
+            throw new BizException("当前状态不可解冻卡片");
+        }
         // 注销卡片
         String txId = vsApi.unfreezeCard(card.getCardId());
         // 写入redis
