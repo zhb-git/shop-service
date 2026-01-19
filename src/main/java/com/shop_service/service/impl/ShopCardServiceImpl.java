@@ -162,6 +162,13 @@ public class ShopCardServiceImpl extends ServiceImpl<ShopCardMapper, ShopCard> i
     public String openCard(ShopInfo shopInfo, ShopOpenCardQuery query) {
         // 校验卡头是否存在
         ShopCardBin bin = checkCardBin(shopInfo.getId(), query.getBinId());
+        // 校验状态
+        if (bin.getMaintain()) {
+            throw new BizException("此卡段正在维护");
+        }
+        if (!bin.getStatus()) {
+            throw new BizException("此卡段不可使用");
+        }
         // 校验预留金额是否小于最低标准
         if (query.getReserveAmount().compareTo(bin.getCreateMinAmount()) > 0) {
             throw new BizException("此卡段预留金额不能小于" + bin.getCreateMinAmount());
