@@ -288,6 +288,10 @@ public class ShopCardServiceImpl extends ServiceImpl<ShopCardMapper, ShopCard> i
     public String destroyCard(ShopInfo shopInfo, ShopDestroyCardQuery query) {
         // 校验卡片
         ShopCard card = checkCard(shopInfo.getId(), query.getCardId());
+        // 校验卡片状态
+        if (VsCardStatus.CANCELLED.getValue() == card.getStatus()) {
+            throw new BizException("此卡已注销");
+        }
         // 注销卡片
         String txId = vsApi.destroyCard(card.getCardId());
         // 写入redis
