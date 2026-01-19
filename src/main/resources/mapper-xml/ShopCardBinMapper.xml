@@ -1,0 +1,147 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.shop_service.mapper.ShopCardBinMapper">
+    <!-- VO 映射: scenes(json) -> List<String> -->
+    <resultMap id="AdminShopCardBinVoMap" type="com.shop_service.model.response.AdminShopCardBinVo">
+        <result column="shopId" property="shopId"/>
+        <result column="shopNo" property="shopNo"/>
+        <result column="shopName" property="shopName"/>
+
+        <result column="cardBinId" property="cardBinId"/>
+        <result column="cardBin" property="cardBin"/>
+
+        <result column="type" property="type"/>
+        <result column="name" property="name"/>
+        <result column="network" property="network"/>
+        <result column="country" property="country"/>
+
+        <result column="avs" property="avs"/>
+        <result column="_3ds" property="_3ds"/>
+
+        <result column="dayPurchaseLimit" property="dayPurchaseLimit"/>
+        <result column="singlePurchaseLimit" property="singlePurchaseLimit"/>
+        <result column="lifetimePurchaseLimit" property="lifetimePurchaseLimit"/>
+
+        <result column="maintain" property="maintain"/>
+        <result column="weigh" property="weigh"/>
+        <result column="status" property="status"/>
+
+        <result column="createAmount" property="createAmount"/>
+        <result column="cardDepositFee" property="cardDepositFee"/>
+
+        <result column="allowCreate" property="allowCreate"/>
+        <result column="allowIn" property="allowIn"/>
+        <result column="allowOut" property="allowOut"/>
+        <result column="allowSuspend" property="allowSuspend"/>
+        <result column="allowEnable" property="allowEnable"/>
+        <result column="allowFrozen" property="allowFrozen"/>
+        <result column="allowUnfrozen" property="allowUnfrozen"/>
+        <result column="allowDestroy" property="allowDestroy"/>
+
+        <result column="createMinAmount" property="createMinAmount"/>
+        <result column="createMaxAmount" property="createMaxAmount"/>
+        <result column="rechargeMinAmount" property="rechargeMinAmount"/>
+        <result column="rechargeMaxAmount" property="rechargeMaxAmount"/>
+        <result column="withdrawMinAmount" property="withdrawMinAmount"/>
+        <result column="withdrawMaxAmount" property="withdrawMaxAmount"/>
+
+        <result column="physical" property="physical"/>
+        <result column="refuseTimes" property="refuseTimes"/>
+        <result column="refuseRate" property="refuseRate"/>
+
+        <result column="currency" property="currency"/>
+
+        <!-- JSON -> List<String> -->
+        <result column="scenes"
+                property="scenes"
+                typeHandler="com.baomidou.mybatisplus.extension.handlers.JacksonTypeHandler"/>
+    </resultMap>
+
+    <select id="selectAdminShopCardBinVoPage" resultMap="AdminShopCardBinVoMap">
+        SELECT
+        scb.shop_id       AS shopId,
+        scb.shop_no       AS shopNo,
+        s.name            AS shopName,
+
+        scb.card_bin_id   AS cardBinId,
+        scb.card_bin      AS cardBin,
+
+        scb.type          AS type,
+        scb.name          AS name,
+        scb.network       AS network,
+        scb.country       AS country,
+
+        scb.avs           AS avs,
+        scb._3ds          AS _3ds,
+
+        scb.day_purchase_limit      AS dayPurchaseLimit,
+        scb.single_purchase_limit   AS singlePurchaseLimit,
+        scb.lifetime_purchase_limit AS lifetimePurchaseLimit,
+
+        scb.maintain      AS maintain,
+        scb.weigh         AS weigh,
+        scb.status        AS status,
+
+        scb.create_amount     AS createAmount,
+        scb.card_deposit_fee  AS cardDepositFee,
+
+        scb.allow_create   AS allowCreate,
+        scb.allow_in       AS allowIn,
+        scb.allow_out      AS allowOut,
+        scb.allow_suspend  AS allowSuspend,
+        scb.allow_enable   AS allowEnable,
+        scb.allow_frozen   AS allowFrozen,
+        scb.allow_unfrozen AS allowUnfrozen,
+        scb.allow_destroy  AS allowDestroy,
+
+        scb.create_min_amount   AS createMinAmount,
+        scb.create_max_amount   AS createMaxAmount,
+        scb.recharge_min_amount AS rechargeMinAmount,
+        scb.recharge_max_amount AS rechargeMaxAmount,
+        scb.withdraw_min_amount AS withdrawMinAmount,
+        scb.withdraw_max_amount AS withdrawMaxAmount,
+
+        scb.physical     AS physical,
+        scb.refuse_times AS refuseTimes,
+        scb.refuse_rate  AS refuseRate,
+
+        scb.currency AS currency,
+        scb.scenes   AS scenes
+        FROM shop_card_bin scb
+        LEFT JOIN shop s
+        ON s.id = scb.shop_id
+        AND s.deleted = 0
+        <where>
+            scb.deleted = 0
+            <if test="query != null">
+                <if test="query.shopId != null">
+                    AND scb.shop_id = #{query.shopId}
+                </if>
+                <if test="query.shopNo != null and query.shopNo != ''">
+                    AND scb.shop_no LIKE CONCAT('%', #{query.shopNo}, '%')
+                </if>
+                <if test="query.shopName != null and query.shopName != ''">
+                    AND s.name LIKE CONCAT('%', #{query.shopName}, '%')
+                </if>
+            </if>
+        </where>
+        ORDER BY scd.create_time DESC, scb.id DESC
+    </select>
+
+    <select id="selectShopIdByCardBinId" resultType="long">
+        select distinct shop_id
+        from shop_card_bin
+        where card_bin_id = #{cardBinId} and deleted = 0
+    </select>
+
+    <select id="selectShopCardBinInfoByCardBinId" resultType="com.shop_service.model.pojo.ShopCardBinInfo">
+        select
+            id,
+            shop_id,
+            card_bin_id
+        from shop_card_bin
+        where card_bin_id = #{cardBinId} and deleted = 0
+    </select>
+</mapper>

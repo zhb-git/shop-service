@@ -1,0 +1,44 @@
+# 服务配置
+server:
+  port: 8080
+  shutdown: graceful
+
+# 日志级别配置
+logging:
+  level:
+    com.card_service: info
+
+# spring配置
+spring:
+  # 请求配置
+  servlet:
+    multipart:
+      # 单个文件最大限制
+      max-file-size: 20MB
+      # 总请求体最大限制 (所有文件加表单)
+      max-request-size: 20MB
+  # 序列化配置
+  jackson:
+    date-format: yyyy-MM-dd HH:mm:ss
+    time-zone: Asia/Shanghai
+  # redis配置
+  data:
+    redis:
+      database: 0
+      host: localhost
+      port: 6379
+      password:
+  # mysql配置
+  datasource:
+    username: root
+    password: root
+    url: jdbc:mysql://localhost:3306/bot_system?serverTimezone=Asia/Shanghai&characterEncoding=UTF-8&useUnicode=yes
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    hikari:
+      pool-name: mysql
+      connection-test-query: SELECT 1
+
+# mybatis-plus配置
+mybatis-plus:
+  # xml位置
+  mapper-locations: classpath:mapper-xml/**/*.xml

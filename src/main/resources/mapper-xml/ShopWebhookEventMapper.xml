@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.shop_service.mapper.ShopWebhookEventMapper">
+    <select id="selectDueEventIdList" resultType="java.lang.Long">
+        SELECT e.id
+        FROM shop_webhook_event e
+        WHERE e.deleted = 0
+          AND e.status IN (#{pendingStatus}, #{failedRetryStatus})
+          AND (e.next_retry_time IS NULL OR e.next_retry_time &lt;= #{now})
+        ORDER BY IF(e.next_retry_time IS NULL, 0, 1), e.next_retry_time
+        LIMIT #{limit}
+    </select>
+
+    <select id="selectAdminShopWebhookEventVoPage" resultType="com.shop_service.model.response.AdminShopWebhookEventVo">
+        SELECT
+        e.id, AS id,
+        e.shop_id AS shopId,
+        e.shop_no AS shopNo,
+        s.shop_name AS shopName,
+        e.event_id AS eventId,
+        e.event_type AS eventType,
+        e.webhook_url AS webhookUrl,
+        e.payload AS payload,
+        e.status AS status,
+        e.retry_count AS retryCount,
+        e.next_retry_time AS nextRetryTime,
+        e.last_send_time AS lastSendTime,
+        e.last_error AS lastError
+        FROM shop_webhook_event e
+        LEFT JOIN shop s ON s.id = e.shop_id
+        <where>
+            AND e.deleted = 0
+            AND s.deleted = 0
+            <if test="query != null">
+                <if test="query.shopId != null">
+                    AND e.shop_id = #{query.shopId}
+                </if>
+                <if test="query.shopNo != null and query.shopNo != ''">
+                    AND e.shop_no LIKE CONCAT('%', #{query.shopNo}, '%')
+                </if>
+                <if test="query.shopName != null and query.shopName != ''">
+                    AND s.shop_name LIKE CONCAT('%', #{query.shopName}, '%')
+                </if>
+                <if test="query.eventId != null and query.eventId != ''">
+                    AND e.event_id = #{query.eventId}
+                </if>
+                <if test="query.eventType != null and query.eventType != ''">
+                    AND e.event_type = #{query.eventType}
+                </if>
+                <if test="query.status != null">
+                    AND e.status = #{query.status}
+                </if>
+            </if>
+        </where>
+        ORDER BY e.create_time DESC, e.id DESC
+    </select>
+
+    <select id="selectShopAllFailIdList" resultType="long">
+        SELECT
+            id
+        FROM shop_webhook_event
+        WHERE shop_id = #{shopId} AND status = 4 AND deleted = 0
+    </select>
+</mapper>

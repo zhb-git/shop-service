@@ -1,0 +1,12 @@
+# 系统配置
+spring:
+  # 系统名字
+  application:
+    name: 商户服务
+  # 环境配置
+  profiles:
+    active: dev
+  # 线程配置
+  threads:
+    virtual:
+      enabled: true

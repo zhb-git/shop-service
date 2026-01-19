@@ -1,0 +1,96 @@
+package com.shop_service.biz;
+
+import com.shop_service.common.constant.LockServiceType;
+import com.shop_service.common.constant.VcCallbackType;
+import com.shop_service.common.core.LockKeyProduce;
+import com.shop_service.common.core.RedissonLockExecutor;
+import com.shop_service.exception.BizException;
+import com.shop_service.model.pojo.*;
+import com.shop_service.model.request.VsCallbackQuery;
+import com.shop_service.service.IShopCardBinService;
+import com.shop_service.service.IShopCardFundDetailService;
+import com.shop_service.service.IShopCardService;
+import jakarta.annotation.Resource;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.stereotype.Service;
+
+/**
+ * vs回调处理业务类
+ *
+ * @author 啊祖
+ * @date 2026-01-15 14:46
+ **/
+@Slf4j
+@Service
+public class VsCallbackServiceBiz {
+    @Resource
+    private StringRedisTemplate stringRedisTemplate;
+
+    @Resource
+    private RedissonLockExecutor redissonLockExecutor;
+
+    @Resource
+    private IShopCardService shopCardService;
+
+    @Resource
+    private IShopCardBinService shopCardBinService;
+
+    @Resource
+    private IShopCardFundDetailService shopCardFundDetailService;
+
+    // redis 回调ID 键
+    private final String redisUeePayCallbackId = "VsCallbackId";
+
+    /**
+     * 处理回调
+     * @param query 参数
+     */
+    public void execute(VsCallbackQuery query) {
+        // 构建锁
+        String lock = LockKeyProduce.produce(LockServiceType.VS_CALLBACK, query.getId());
+        redissonLockExecutor.execute(lock, () -> {
+            // 验证是否重复处理
+            Boolean member = stringRedisTemplate.opsForSet().isMember(redisUeePayCallbackId, query.getId());
+            if (Boolean.TRUE.equals(member)) {
+                log.info("优易付回调重复 id={}", query.getId());
+                throw new BizException("回调重复 id=" + query.getId());
+            }
+            VcCallbackType callbackType = VcCallbackType.fromValue(query.getType());
+            try {
+                if (VcCallbackType.OPEN_CARD_RESULT.equals(callbackType)) {
+                    shopCardService.openCardResultCallback(query.getData().to(VsOpenCardResultCallbackData.class));
+                } else if (VcCallbackType.DESTROY_CARD_RESULT.equals(callbackType)) {
+                    shopCardService.destroyCardResultCallback(query.getData().to(VsDestroyCardResultCallbackData.class));
+                } else if (VcCallbackType.FROZEN_CARD_RESULT.equals(callbackType)) {
+                    shopCardService.freezeCardResultCallback(query.getData().to(VsFreezeCardResultCallbackData.class));
+                } else if (VcCallbackType.UNFROZEN_CARD_RESULT.equals(callbackType)) {
+                    shopCardService.unfreezeCardResultCallback(query.getData().to(VsUnfreezeCardResultCallbackData.class));
+                } else if (VcCallbackType.CARD_TRANSFER_RESULT.equals(callbackType)) {
+                    shopCardService.cardTransferResultCallback(query.getData().to(VsCardTransferResultCallbackData.class));
+                } else if (VcCallbackType.DESTROY_CARD.equals(callbackType)) {
+                    shopCardService.destroyCardCallback(query.getData().to(VsCardDestroyCallbackData.class));
+                } else if (VcCallbackType.FROZEN_CARD.equals(callbackType)) {
+                    shopCardService.freezeCardCallback(query.getData().to(VsFreezeCardCallbackData.class));
+                } else if (VcCallbackType.UNFROZEN_CARD.equals(callbackType)) {
+                    shopCardService.unfreezeCardCallback(query.getData().to(VsUnfreezeCardCallbackData.class));
+                } else if (VcCallbackType.CARD_OVERSPEND.equals(callbackType)) {
+                    shopCardService.cardOverspendCallback(query.getData().to(VsCardOverspendCallbackData.class));
+                } else if (VcCallbackType.CARD_SETTLEMENT.equals(callbackType)) {
+                    shopCardService.cardSettlementCallback(query.getData().to(VsCardSettlementCallbackData.class));
+                } else if (VcCallbackType.CARD_BIND_PLATFORM.equals(callbackType)) {
+                    shopCardService.cardBindPlatformCallback(query.getData().to(VsCardBindPlatformCallbackData.class));
+                } else if (VcCallbackType.CARD_3DS.equals(callbackType)) {
+                    shopCardService.card3DSCallback(query.getData().to(VsCard3DSCallbackData.class));
+                } else if (VcCallbackType.CARD_BIN_STATUS.equals(callbackType)) {
+                    shopCardBinService.cardBinStatusCallback(query.getData().to(VsCardBinStatusCallbackData.class));
+                } else if (VcCallbackType.CARD_FUNDS_DETAILS.equals(callbackType)) {
+                    shopCardFundDetailService.cardFundDetailCallback(query.getData().to(VsCardFundDetailCallbackData.class));
+                }
+            } finally {
+                // 回调id写入redis
+                stringRedisTemplate.opsForSet().add(redisUeePayCallbackId, query.getId());
+            }
+        });
+    }
+}
