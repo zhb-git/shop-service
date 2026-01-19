@@ -15,13 +15,24 @@ import org.springframework.context.annotation.Configuration;
  **/
 @Configuration
 public class RedissonConfig {
+    /**
+     * redis地址
+     */
     @Value("${redisson.address}")
     private String address;
+
+    /**
+     * 数据库
+     */
+    @Value("${redisson.database:0}")
+    private int database;
 
     @Bean
     public RedissonClient redissonClient() {
         Config config = new Config();
-        config.useSingleServer().setAddress(address);
+        config.useSingleServer()
+                .setAddress(address)
+                .setDatabase(database);
         return Redisson.create(config);
     }
 }
