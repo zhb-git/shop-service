@@ -65,6 +65,7 @@ public class VsApi {
 
     /**
      * 获取卡片余额
+     *
      * @param cardId 卡片ID
      * @return 余额
      */
@@ -77,6 +78,7 @@ public class VsApi {
 
     /**
      * 注销卡片
+     *
      * @param cardId 卡片ID
      * @return 交易ID
      */
@@ -93,6 +95,7 @@ public class VsApi {
 
     /**
      * 冻结卡片
+     *
      * @param cardId 卡片ID
      * @return 交易ID
      */
@@ -109,6 +112,7 @@ public class VsApi {
 
     /**
      * 解冻结卡片
+     *
      * @param cardId 卡片ID
      * @return 交易ID
      */
@@ -125,6 +129,7 @@ public class VsApi {
 
     /**
      * 卡片转账
+     *
      * @param cardId       卡片ID
      * @param transferType 转账类型
      * @param amount       转账金额
@@ -145,6 +150,7 @@ public class VsApi {
 
     /**
      * 查询卡片信息
+     *
      * @param cardId 卡片ID
      * @return 卡片信息
      */
@@ -159,11 +165,11 @@ public class VsApi {
         try (HttpResponse response = request.execute()) {
             VsApiResult<T> result = JSON.parseObject(response.body(), type);
             boolean success = result.isSuccess();
-            if (!success) throw new ApiRequestException("业务失败: " + result.getMessage());
+            if (!success) throw new ApiRequestException(result.getMessage());
             return result.getData();
         } catch (Exception e) {
-            log.error("vs卡片接口({})调用失败", request.getUrl(), e);
-            throw new ApiRequestException("API通信异常", e);
+            log.error("vs卡片服务通信异常({})调用失败", request.getUrl(), e);
+            throw new ApiRequestException("[vs卡片服务]通信异常(" + e.getMessage() + ")", e);
         }
     }
 }

@@ -2,9 +2,10 @@ package com.shop_service.web.filter;
 
 import com.shop_service.common.constant.HttpAttribute;
 import com.shop_service.common.constant.HttpHeader;
+import com.shop_service.common.core.HttpResp;
 import com.shop_service.common.utils.IpAddressUtil;
-import com.shop_service.exception.QueryException;
 import com.shop_service.model.pojo.ShopInfo;
+import com.shop_service.model.response.R;
 import com.shop_service.service.IShopService;
 import jakarta.annotation.Nonnull;
 import jakarta.servlet.FilterChain;
@@ -58,11 +59,25 @@ public class ShopTokenFilter  extends OncePerRequestFilter {
         String shopNo = request.getHeader(HttpHeader.X_SHOP_NO);
         String shopPublicKey = request.getHeader(HttpHeader.X_SHOP_PUBLIC_KEY);
         if (!StringUtils.hasText(shopNo) || !StringUtils.hasText(shopPublicKey)) {
-            throw new QueryException("缺少认证参数");
+            HttpResp.writer(response, HttpServletResponse.SC_UNAUTHORIZED, R.fail("缺少认证参数"));
+            return;
         }
 
         // 认证
         ShopInfo info = shopService.authentication(ip, shopNo, shopPublicKey);
+        if (info == null) {
+            HttpResp.writer(response, HttpServletResponse.SC_FORBIDDEN, R.fail("凭证错误"));
+            return;
+        }
+        if (!info.getEnabled()) {
+            HttpResp.writer(response, HttpServletResponse.SC_FORBIDDEN, R.fail("商户已被停用"));
+            return;
+        }
+        // 商户设置白名单则需认证, 未设置则无白名单限制
+        if (!info.getIpWhitelist().isEmpty() && !info.getIpWhitelist().contains(ip)) {
+            HttpResp.writer(response, HttpServletResponse.SC_FORBIDDEN, R.fail("不在商户IP白名单内"));
+            return;
+        }
         var authentication = new UsernamePasswordAuthenticationToken(
                 info, null, List.of(new SimpleGrantedAuthority("ROLE_CLIENT_SERVE"))
         );

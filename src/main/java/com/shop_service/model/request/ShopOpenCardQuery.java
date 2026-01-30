@@ -1,6 +1,6 @@
 package com.shop_service.model.request;
 
-import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 
@@ -24,6 +24,6 @@ public class ShopOpenCardQuery {
      * 预留金额
      */
     @NotNull(message = "请填写预留金额")
-    @Min(value = 0, message = "预留金额不能小于0")
+    @DecimalMin(value = "0", inclusive = false, message = "预留金额必须大于0")
     private BigDecimal reserveAmount;
 }

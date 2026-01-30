@@ -12,7 +12,6 @@ import com.shop_service.common.core.RedissonLockExecutor;
 import com.shop_service.common.core.RespPageConvert;
 import com.shop_service.common.core.TronApi;
 import com.shop_service.common.utils.ShopNoGeneratorUtil;
-import com.shop_service.exception.AuthenticationException;
 import com.shop_service.exception.BizException;
 import com.shop_service.mapper.ShopMapper;
 import com.shop_service.model.entity.Shop;
@@ -256,20 +255,7 @@ public class ShopServiceImpl extends ServiceImpl<ShopMapper, Shop> implements IS
 
     @Override
     public ShopInfo authentication(String ip, String shopNo, String publicKey) {
-        ShopInfo shopInfo = getRedisShopInfo(shopNo);
-        if (shopInfo == null) {
-            return null;
-        }
-        if (!shopInfo.getPublicKey().equals(publicKey)) {
-            return null;
-        }
-        if (!shopInfo.getEnabled()) {
-            throw new AuthenticationException("商户已被停用");
-        }
-        if (!shopInfo.getIpWhitelist().contains(ip)) {
-            throw new AuthenticationException("不在商户IP白名单内");
-        }
-        return shopInfo;
+        return getRedisShopInfo(shopNo);
     }
 
     @Override
@@ -428,14 +414,14 @@ public class ShopServiceImpl extends ServiceImpl<ShopMapper, Shop> implements IS
 
     private void setRedisShopInfo(ShopInfo shopInfo) {
         // 写入redis 商户ID -> 商户信息
-        stringRedisTemplate.opsForHash().put(redisShopInfo + ":" + "ID", shopInfo.getId(), JSON.toJSONString(shopInfo));
+        stringRedisTemplate.opsForHash().put(redisShopInfo + ":" + "ID", shopInfo.getId().toString(), JSON.toJSONString(shopInfo));
         // 写入redis 商户号 -> 商户信息
         stringRedisTemplate.opsForHash().put(redisShopInfo + ":" + "NO", shopInfo.getNo(), JSON.toJSONString(shopInfo));
     }
 
     private ShopInfo getRedisShopInfo(Long shopId) {
         // 查询缓存
-        Object data = stringRedisTemplate.opsForHash().get(redisShopInfo + ":" + "ID", shopId);
+        Object data = stringRedisTemplate.opsForHash().get(redisShopInfo + ":" + "ID", shopId.toString());
         if (data == null) {
             return null;
         }

@@ -6,7 +6,7 @@ server:
 # 日志级别配置
 logging:
   level:
-    com.card_service: debug
+    com.shop_service: debug
 
 # spring配置
 spring:
@@ -32,7 +32,7 @@ spring:
   datasource:
     username: root
     password: root
-    url: jdbc:mysql://127.0.0.1:3306/uk_card_service?serverTimezone=Asia/Shanghai&characterEncoding=UTF-8&useUnicode=yes
+    url: jdbc:mysql://127.0.0.1:3306/uk_shop_service?serverTimezone=Asia/Shanghai&characterEncoding=UTF-8&useUnicode=yes
     driver-class-name: com.mysql.cj.jdbc.Driver
     hikari:
       pool-name: mysql
@@ -70,13 +70,15 @@ management:
 # 系统配置
 system:
   domain: http://127.0.0.1:8080
-  admin-token: 123456
+  admin-token: 73c3632d-e7de-4865-9c28-3dd966d59f29
 
+# 波场配置
 tron:
-  api:
-  id:
-  key:
-  
+  api: https://tron.vdo6ec.cn
+  id: 9
+  key: 6e5e210c-8e4a-4a00-9c35-0ff3658137fa
+
+# vs卡片服务配置
 vs:
-  api:
-  token:
+  api: http://127.0.0.1:8081
+  token: 28abbd65-14a4-42cf-85fe-6b4583957e5f

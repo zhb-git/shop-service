@@ -3,8 +3,10 @@
         PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.shop_service.mapper.ShopWebhookEventMapper">
-    <select id="selectDueEventIdList" resultType="java.lang.Long">
-        SELECT e.id
+    <select id="selectDueEventList" resultType="com.shop_service.model.pojo.DueEvent">
+        SELECT
+            e.id,
+            e.shop_id
         FROM shop_webhook_event e
         WHERE e.deleted = 0
           AND e.status IN (#{pendingStatus}, #{failedRetryStatus})

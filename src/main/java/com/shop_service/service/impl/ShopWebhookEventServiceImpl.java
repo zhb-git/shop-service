@@ -12,9 +12,11 @@ import com.shop_service.common.constant.ShopWebhookStatus;
 import com.shop_service.common.core.LockKeyProduce;
 import com.shop_service.common.core.RedissonLockExecutor;
 import com.shop_service.common.core.RespPageConvert;
+import com.shop_service.common.core.ShopWebhookSender;
 import com.shop_service.exception.BizException;
 import com.shop_service.mapper.ShopWebhookEventMapper;
 import com.shop_service.model.entity.ShopWebhookEvent;
+import com.shop_service.model.pojo.DueEvent;
 import com.shop_service.model.pojo.ShopInfo;
 import com.shop_service.model.request.AdminShopWebhookEventPageQuery;
 import com.shop_service.model.response.AdminShopWebhookEventVo;
@@ -41,6 +43,9 @@ import java.util.concurrent.Semaphore;
 @Slf4j
 @Service
 public class ShopWebhookEventServiceImpl extends ServiceImpl<ShopWebhookEventMapper, ShopWebhookEvent> implements IShopWebhookEventService {
+    // 最大重试次数
+    private static final int MAX_RETRY = 10;
+
     @Resource
     private RedissonLockExecutor redissonLockExecutor;
 
@@ -58,12 +63,12 @@ public class ShopWebhookEventServiceImpl extends ServiceImpl<ShopWebhookEventMap
         event.setWebhookUrl(shopInfo.getWebhookUrl());
         event.setPayload(JSON.toJSONString(payload));
 
-        // 是否等待扫描发送
-        boolean canSend = Boolean.TRUE.equals(shopInfo.getEnabled())
+        // 是否发送
+        boolean isSend = Boolean.TRUE.equals(shopInfo.getEnabled())
                 && Boolean.TRUE.equals(shopInfo.getWebhookEnabled())
                 && shopInfo.getWebhookUrl() != null;
 
-        if (canSend) {
+        if (isSend) {
             event.setStatus(ShopWebhookStatus.PENDING.getValue());
             event.setRetryCount(0);
             event.setNextRetryTime(LocalDateTime.now());
@@ -73,12 +78,17 @@ public class ShopWebhookEventServiceImpl extends ServiceImpl<ShopWebhookEventMap
             event.setLastError("商户被停用, 或者商户未开启回调, 或者设置未设置回调url");
         }
 
-        baseMapper.insert(event);
+        if (baseMapper.insert(event) != 1) {
+            throw new BizException("商户回调时间新增失败");
+        }
+
+        // 发送回调 (首发)
+        sendWebhook(shopInfo, event.getId());
     }
 
     @Override
-    public List<Long> getDueEventList(LocalDateTime now, int limit) {
-        return baseMapper.selectDueEventIdList(
+    public List<DueEvent> getDueEventList(LocalDateTime now, int limit) {
+        return baseMapper.selectDueEventList(
                 now,
                 limit,
                 ShopWebhookStatus.PENDING.getValue(),
@@ -87,10 +97,119 @@ public class ShopWebhookEventServiceImpl extends ServiceImpl<ShopWebhookEventMap
     }
 
     @Override
-    public boolean markSending(Long id, LocalDateTime now) {
+    public void sendWebhook(ShopInfo shopInfo, Long id) {
+        // 加锁执行
+        String lock = LockKeyProduce.produce(LockServiceType.SHOP_WEBHOOK_EVENT, id);
+        redissonLockExecutor.execute(lock, () -> {
+            // 查询事件
+            ShopWebhookEvent event = getById(id);
+
+            // 校验状态, 防止重复发, 只发状态: 待发送 or 发送失败(待重试)
+            if (ShopWebhookStatus.PENDING.getValue() != event.getStatus() &&
+                    ShopWebhookStatus.FAILED_RETRY.getValue() != event.getStatus()) {
+                return;
+            }
+
+            LocalDateTime nowTime = LocalDateTime.now();
+
+            try {
+                // 领取任务: 仅允许 PENDING/FAILED_RETRY 且到期的记录标记为 SENDING
+                boolean picked = markSending(event.getId(), nowTime);
+                if (!picked) {
+                    return;
+                }
+
+                // 基本校验
+                if (!Boolean.TRUE.equals(shopInfo.getEnabled())) {
+                    markAbandoned(event.getId(), "商户已被停用");
+                    return;
+                }
+                if (!Boolean.TRUE.equals(shopInfo.getWebhookEnabled())) {
+                    markAbandoned(event.getId(), "商户未开启回调");
+                    return;
+                }
+                if (!StringUtils.hasText(shopInfo.getWebhookSecret())) {
+                    markAbandoned(event.getId(), "商户未配置回调签名密钥");
+                    return;
+                }
+
+                // webhookUrl: 优先使用事件快照, 为空则兜底使用商户当前配置
+                String webhookUrl = StringUtils.hasText(event.getWebhookUrl()) ? event.getWebhookUrl() : shopInfo.getWebhookUrl();
+                if (!StringUtils.hasText(webhookUrl)) {
+                    markAbandoned(event.getId(), "商户未配置回调地址");
+                    return;
+                }
+                event.setWebhookUrl(webhookUrl);
+
+                // 发送回调
+                ShopWebhookSender.SendResult result = ShopWebhookSender.execute(shopInfo, event);
+
+                // 更新状态
+                if (result.ok()) {
+                    markSuccess(event.getId());
+                    return;
+                }
+
+                int retry = (event.getRetryCount() == null ? 0 : event.getRetryCount()) + 1;
+                if (retry >= MAX_RETRY) {
+                    markAbandoned(event.getId(), "回调失败次数已达上限, httpCode=" + result.httpCode() + ", 响应=" + safe(result.message()));
+                    return;
+                }
+
+                LocalDateTime nextTime = nowTime.plusSeconds(calcDelaySeconds(retry));
+                markFailRetry(event.getId(), retry, nextTime, "回调失败, httpCode=" + result.httpCode() + ", 响应=" + safe(result.message()));
+
+            } catch (Exception ex) {
+                log.warn("商户回调任务异常, 事件数据库ID={}, eventId={}, 异常={}", event.getId(), event.getEventId(), ex.toString());
+
+                try {
+                    int retry = (event.getRetryCount() == null ? 0 : event.getRetryCount()) + 1;
+                    String reason = "回调发送异常: " + ex.getClass().getSimpleName() + ", " + safe(ex.getMessage());
+
+                    if (retry >= MAX_RETRY) {
+                        markAbandoned(event.getId(), reason);
+                    } else {
+                        LocalDateTime next = LocalDateTime.now().plusSeconds(calcDelaySeconds(retry));
+                        markFailRetry(event.getId(), retry, next, reason);
+                    }
+                } catch (Exception ignored) {
+                    // ignore
+                }
+            }
+        });
+        log.info("商户[{} / {}]回调事件 - 系统事件ID={}, 执行完成", shopInfo.getNo(), shopInfo.getName(), id);
+    }
+
+    /**
+     * 简单退避(不复杂但实用)
+     * 1->5s, 2->10s, 3->30s, 4->60s, 5->120s, 其它->300s
+     */
+    private int calcDelaySeconds(int retry) {
+        return switch (retry) {
+            case 1 -> 5;
+            case 2 -> 10;
+            case 3 -> 30;
+            case 4 -> 60;
+            case 5 -> 120;
+            default -> 300;
+        };
+    }
+
+    /**
+     * 领取一个回调事件并标记为发送中(SENDING)
+     * 说明:
+     * - 这是一个"条件更新"(CAS)操作, 用于避免同一条事件被重复发送
+     * - 只有当事件当前状态为 PENDING/FAILED_RETRY 且已到期时, 才会更新为 SENDING
+     * - 领取成功返回 true, 否则返回 false(表示已被其他线程/任务领取或不满足条件)
+     *
+     * @param id  事件表主键
+     * @param now 当前时间
+     * @return 是否领取成功
+     */
+    private boolean markSending(Long id, LocalDateTime now) {
         String lock = LockKeyProduce.produce(LockServiceType.SHOP_WEBHOOK_EVENT, id);
         return redissonLockExecutor.execute(lock, () -> {
-            // 更新
+            // 更新状态 && 最后发送时间
             LambdaUpdateWrapper<ShopWebhookEvent> uw = new LambdaUpdateWrapper<>();
             uw.eq(ShopWebhookEvent::getId, id);
             uw.in(ShopWebhookEvent::getStatus,
@@ -107,8 +226,16 @@ public class ShopWebhookEventServiceImpl extends ServiceImpl<ShopWebhookEventMap
         });
     }
 
-    @Override
-    public void markSuccess(Long id) {
+    /**
+     * 标记回调事件发送成功(SUCCESS)
+     * 说明:
+     * - status -> SUCCESS
+     * - nextRetryTime -> null
+     * - lastError -> null
+     *
+     * @param id 事件表主键
+     */
+    private void markSuccess(Long id) {
         String lock = LockKeyProduce.produce(LockServiceType.SHOP_WEBHOOK_EVENT, id);
         redissonLockExecutor.execute(lock, () -> {
             // 更新
@@ -124,8 +251,20 @@ public class ShopWebhookEventServiceImpl extends ServiceImpl<ShopWebhookEventMap
         });
     }
 
-    @Override
-    public void markFailRetry(Long id, int retryCount, LocalDateTime nextRetryTime, String lastError) {
+    /**
+     * 标记回调事件发送失败(待重试)(FAILED_RETRY)
+     * 说明:
+     * - status -> FAILED_RETRY
+     * - retryCount -> 递增后的重试次数
+     * - nextRetryTime -> 下次重试时间(由调度策略计算)
+     * - lastError -> 记录失败原因(建议截断避免过长)
+     *
+     * @param id            事件表主键
+     * @param retryCount    已重试次数(递增后)
+     * @param nextRetryTime 下次重试时间
+     * @param lastError     失败原因(简短)
+     */
+    private void markFailRetry(Long id, int retryCount, LocalDateTime nextRetryTime, String lastError) {
         String lock = LockKeyProduce.produce(LockServiceType.SHOP_WEBHOOK_EVENT, id);
         redissonLockExecutor.execute(lock, () -> {
             // 更新
@@ -142,8 +281,18 @@ public class ShopWebhookEventServiceImpl extends ServiceImpl<ShopWebhookEventMap
         });
     }
 
-    @Override
-    public void markAbandoned(Long id, String lastError) {
+    /**
+     * 标记回调事件终止/放弃(ABANDONED)
+     * 适用场景:
+     * - 商户停用
+     * - 商户关闭回调
+     * - 缺少 callbackUrl / callbackSecret 等关键配置
+     * - 超过最大重试次数(可在此处终止)
+     *
+     * @param id        事件表主键
+     * @param lastError 放弃原因(简短)
+     */
+    private void markAbandoned(Long id, String lastError) {
         String lock = LockKeyProduce.produce(LockServiceType.SHOP_WEBHOOK_EVENT, id);
         redissonLockExecutor.execute(lock, () -> {
             // 更新
@@ -226,11 +375,6 @@ public class ShopWebhookEventServiceImpl extends ServiceImpl<ShopWebhookEventMap
         }
         // 批量并发修改
         retry(idList.toArray(Long[]::new));
-    }
-
-    @Override
-    public ShopWebhookEvent getById(Long id) {
-        return baseMapper.selectById(id);
     }
 
     private void retryOne(Long id) {

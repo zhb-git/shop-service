@@ -1,8 +1,6 @@
 package com.shop_service.web.global;
 
-import com.shop_service.exception.BizException;
-import com.shop_service.exception.LockAcquireException;
-import com.shop_service.exception.QueryException;
+import com.shop_service.exception.*;
 import com.shop_service.model.response.R;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.ConstraintViolation;
@@ -39,7 +37,7 @@ public class GlobalExceptionController {
      * @return  响应
      */
     @ExceptionHandler(BindException.class)
-    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    @ResponseStatus(HttpStatus.UNAUTHORIZED)
     R<String> bindExceptionHandler(BindException e) {
         String message = e.getBindingResult().getFieldErrors().stream()
                 .map(err -> err.getField() + ": " + err.getDefaultMessage())
@@ -55,7 +53,7 @@ public class GlobalExceptionController {
      * @return  响应
      */
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    @ResponseStatus(HttpStatus.UNAUTHORIZED)
     R<String> methodArgumentNotValidExceptionHandler(MethodArgumentNotValidException e) {
         String message = e.getBindingResult().getFieldErrors().stream()
                 .map(err -> err.getField() + ": " + err.getDefaultMessage())
@@ -71,7 +69,7 @@ public class GlobalExceptionController {
      * @return  响应
      */
     @ExceptionHandler(ConstraintViolationException.class)
-    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    @ResponseStatus(HttpStatus.UNAUTHORIZED)
     R<String> constraintViolationExceptionHandler(ConstraintViolationException e) {
         String message = e.getConstraintViolations().stream()
                 .map(ConstraintViolation::getMessage)
@@ -131,7 +129,7 @@ public class GlobalExceptionController {
      * 处理参数异常
      */
     @ExceptionHandler(QueryException.class)
-    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    @ResponseStatus(HttpStatus.UNAUTHORIZED)
     R<String> queryExceptionHandler(QueryException e, HttpServletRequest request) {
         log.warn("参数异常 -> uri: {} message: {}", request.getRequestURI(), e.getMessage());
         return R.fail(e.getMessage());
@@ -141,7 +139,7 @@ public class GlobalExceptionController {
      * 处理获取锁失败异常
      */
     @ExceptionHandler(LockAcquireException.class)
-    @ResponseStatus(HttpStatus.OK)
+    @ResponseStatus(HttpStatus.LOCKED)
     R<String> lockAcquireExceptionHandler(LockAcquireException e, HttpServletRequest request) {
         log.warn(
                 "获取锁失败 -> uri: {} lock: {} wait: {} lease: {} multi: {}",
@@ -157,10 +155,23 @@ public class GlobalExceptionController {
     /**
      * 处理认证异常
      */
-    @ExceptionHandler(ArithmeticException.class)
+    @ExceptionHandler(AuthenticationException.class)
     @ResponseStatus(HttpStatus.FORBIDDEN)
-    R<String> arithmeticExceptionHandler(ArithmeticException e, HttpServletRequest request) {
+    R<String> arithmeticExceptionHandler(AuthenticationException e, HttpServletRequest request) {
         log.warn("认证失败 -> uri: {} message: {}", request.getRequestURI(), e.getMessage());
+        return R.fail(e.getMessage());
+    }
+
+    /**
+     * 处理上游接口请求异常
+     * @param e       异常
+     * @param request 请求
+     * @return 响应
+     */
+    @ExceptionHandler(ApiRequestException.class)
+    @ResponseStatus(HttpStatus.BAD_GATEWAY)
+    R<String> apiRequestExceptionHandler(ApiRequestException e, HttpServletRequest request) {
+        log.warn("上游网关请求失败 -> uri: {} message: {}", request.getRequestURI(), e.getMessage());
         return R.fail(e.getMessage());
     }
 

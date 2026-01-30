@@ -64,18 +64,18 @@ public class TronApi {
             try (HttpResponse response = request.execute()) {
                 String body = response.body();
                 if (body == null) {
-                    throw new ApiRequestException("波场接口请求失败");
+                    throw new ApiRequestException("请求失败");
                 }
                 JSONObject json = JSON.parseObject(body);
                 Integer code = json.getInteger("code");
                 if (code != 200) {
-                    throw new ApiRequestException("波场接口请求失败, 原因: " + json.getString("message"));
+                    throw new ApiRequestException(json.getString("message"));
                 }
                 return json.getJSONObject("data");
             }
         } catch (Exception e) {
-            log.error("波场接口请求失败 - url: {}, error: {}", api, e.getMessage());
-            throw new ApiRequestException("波场接口请求失败: " + e.getMessage(), e);
+            log.error("波场服务通信异常({})调用失败", api, e);
+            throw new ApiRequestException("[波场服务]通信异常", e);
         }
     }
 }

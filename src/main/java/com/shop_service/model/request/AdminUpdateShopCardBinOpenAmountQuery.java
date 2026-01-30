@@ -1,6 +1,6 @@
 package com.shop_service.model.request;
 
-import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 
@@ -30,6 +30,6 @@ public class AdminUpdateShopCardBinOpenAmountQuery {
      * 开卡价格
      */
     @NotNull(message = "请填写开卡价格")
-    @Min(value = 0, message = "开卡价格不能小于0")
+    @DecimalMin(value = "0", inclusive = false, message = "开卡价格必须大于0")
     private BigDecimal createAmount;
 }

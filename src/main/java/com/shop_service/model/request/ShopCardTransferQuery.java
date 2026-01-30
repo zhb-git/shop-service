@@ -1,6 +1,6 @@
 package com.shop_service.model.request;
 
-import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 
@@ -30,6 +30,6 @@ public class ShopCardTransferQuery {
      * 小数只能精确到两位
      */
     @NotNull(message = "请填写转账金额")
-    @Min(value = 0, message = "转账金额不能小于0")
+    @DecimalMin(value = "0", inclusive = false, message = "转账金额必须大于0")
     private BigDecimal amount;
 }

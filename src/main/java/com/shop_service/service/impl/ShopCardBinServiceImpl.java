@@ -116,7 +116,7 @@ public class ShopCardBinServiceImpl extends ServiceImpl<ShopCardBinMapper, ShopC
             }
             // 设置卡头
             ShopCardBin shopCardBin = new ShopCardBin();
-            BeanUtils.copyProperties(query, shopCardBin, "id", "bin", "createAmount");
+            BeanUtils.copyProperties(cardBin, shopCardBin, "id", "bin", "createAmount");
             shopCardBin.setShopId(shopInfo.getId());
             shopCardBin.setShopNo(shopInfo.getNo());
             shopCardBin.setCardBinId(cardBin.getId());
@@ -223,16 +223,8 @@ public class ShopCardBinServiceImpl extends ServiceImpl<ShopCardBinMapper, ShopC
         }
     }
 
-    private ShopInfo checkShop(Long shopId) {
-        // 校验商户是否存在
-        ShopInfo shopInfo = shopService.getShopInfoById(shopId);
-        if (shopInfo == null) {
-            throw new BizException("商户不存在");
-        }
-        return shopInfo;
-    }
-
-    private ShopCardBin checkCardBin(Long shopId, Long cardBinId) {
+    @Override
+    public ShopCardBin checkCardBin(Long shopId, Long cardBinId) {
         // 校验卡头是否存在
         LambdaQueryWrapper<ShopCardBin> qw = new LambdaQueryWrapper<>();
         qw.eq(ShopCardBin::getShopId, shopId)
@@ -242,5 +234,14 @@ public class ShopCardBinServiceImpl extends ServiceImpl<ShopCardBinMapper, ShopC
             throw new BizException("商户不存在此卡头");
         }
         return shopCardBin;
+    }
+
+    private ShopInfo checkShop(Long shopId) {
+        // 校验商户是否存在
+        ShopInfo shopInfo = shopService.getShopInfoById(shopId);
+        if (shopInfo == null) {
+            throw new BizException("商户不存在");
+        }
+        return shopInfo;
     }
 }

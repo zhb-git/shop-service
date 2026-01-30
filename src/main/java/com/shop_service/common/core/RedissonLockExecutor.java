@@ -42,9 +42,9 @@ public class RedissonLockExecutor {
     private static final long DEFAULT_LEASE_SECONDS = 30;
 
     /**
-     * 锁 key 前缀, 建议按业务自定义
+     * 锁 key 前缀
      */
-    private static final String LOCK_PREFIX = "lock:wallet:";
+    private static final String LOCK_PREFIX = "lock:shop-service:";
 
     /**
      * 单锁执行, 默认 tryLock(waitSeconds), 使用 watchdog 自动续期

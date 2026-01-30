@@ -1,8 +1,9 @@
 package com.shop_service.web.filter;
 
 import com.shop_service.common.constant.HttpHeader;
+import com.shop_service.common.core.HttpResp;
 import com.shop_service.config.SystemConfig;
-import com.shop_service.exception.QueryException;
+import com.shop_service.model.response.R;
 import jakarta.annotation.Nonnull;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -16,7 +17,6 @@ import org.springframework.security.web.util.matcher.RequestMatcher;
 import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
 
-import javax.security.sasl.AuthenticationException;
 import java.io.IOException;
 import java.util.List;
 
@@ -54,13 +54,15 @@ public class AdminTokenFilter extends OncePerRequestFilter {
         // 取出凭证
         String token = request.getHeader(HttpHeader.X_TOKEN);
         String expected = systemConfig.getAdminToken();
+        if (!StringUtils.hasText(token)) {
+            HttpResp.writer(response, HttpServletResponse.SC_UNAUTHORIZED, R.fail("缺少认证参数"));
+            return;
+        }
 
         // 认证
-        if (!StringUtils.hasText(token)) {
-            throw new QueryException("缺少认证参数");
-        }
         if (!expected.equals(token)) {
-            throw new AuthenticationException("凭证错误");
+            HttpResp.writer(response, HttpServletResponse.SC_FORBIDDEN, R.fail("凭证错误"));
+            return;
         }
         var authentication = new UsernamePasswordAuthenticationToken(
                 "admin",

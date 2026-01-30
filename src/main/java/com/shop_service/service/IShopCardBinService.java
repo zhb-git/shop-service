@@ -65,4 +65,13 @@ public interface IShopCardBinService extends IService<ShopCardBin> {
      * @param data 数据
      */
     void cardBinStatusCallback(VsCardBinStatusCallbackData data);
+
+
+    /**
+     * 校验卡头是否存在
+     * @param shopId 商户ID
+     * @param binId 卡头ID
+     * @return 卡头
+     */
+    ShopCardBin checkCardBin(Long shopId, Long binId);
 }

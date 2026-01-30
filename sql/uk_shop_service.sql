@@ -11,7 +11,7 @@
  Target Server Version : 90200
  File Encoding         : 65001
 
- Date: 20/01/2026 00:22:07
+ Date: 21/01/2026 18:08:22
 */
 
 SET NAMES utf8mb4;
@@ -46,10 +46,6 @@ CREATE TABLE `shop`  (
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '商户表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
--- Records of shop
--- ----------------------------
-
--- ----------------------------
 -- Table structure for shop_card
 -- ----------------------------
 DROP TABLE IF EXISTS `shop_card`;
@@ -77,12 +73,9 @@ CREATE TABLE `shop_card`  (
   UNIQUE INDEX `uk_shop_card_card_id`(`card_id` ASC) USING BTREE,
   INDEX `idx_shop_card_shop_id`(`shop_id` ASC) USING BTREE,
   INDEX `idx_shop_card_card_bin_id`(`card_bin_id` ASC) USING BTREE,
-  INDEX `idx_shop_card_deleted`(`deleted` ASC) USING BTREE
+  INDEX `idx_shop_card_deleted`(`deleted` ASC) USING BTREE,
+  UNIQUE INDEX `idx_shop_card_card_no`(`card_no` ASC) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '商户卡片表' ROW_FORMAT = Dynamic;
-
--- ----------------------------
--- Records of shop_card
--- ----------------------------
 
 -- ----------------------------
 -- Table structure for shop_card_bin
@@ -138,10 +131,6 @@ CREATE TABLE `shop_card_bin`  (
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '商户卡头表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
--- Records of shop_card_bin
--- ----------------------------
-
--- ----------------------------
 -- Table structure for shop_card_fund_detail
 -- ----------------------------
 DROP TABLE IF EXISTS `shop_card_fund_detail`;
@@ -175,10 +164,6 @@ CREATE TABLE `shop_card_fund_detail`  (
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '商户卡片资金明细表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
--- Records of shop_card_fund_detail
--- ----------------------------
-
--- ----------------------------
 -- Table structure for shop_fund_detail
 -- ----------------------------
 DROP TABLE IF EXISTS `shop_fund_detail`;
@@ -200,10 +185,6 @@ CREATE TABLE `shop_fund_detail`  (
   INDEX `idx_shop_fund_detail_biz_no`(`biz_no` ASC) USING BTREE,
   INDEX `idx_shop_fund_detail_deleted`(`deleted` ASC) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '商户资金明细表' ROW_FORMAT = Dynamic;
-
--- ----------------------------
--- Records of shop_fund_detail
--- ----------------------------
 
 -- ----------------------------
 -- Table structure for shop_recharge_record
@@ -229,10 +210,6 @@ CREATE TABLE `shop_recharge_record`  (
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '商户充值记录表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
--- Records of shop_recharge_record
--- ----------------------------
-
--- ----------------------------
 -- Table structure for shop_webhook_event
 -- ----------------------------
 DROP TABLE IF EXISTS `shop_webhook_event`;
@@ -242,12 +219,12 @@ CREATE TABLE `shop_webhook_event`  (
   `shop_no` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '商户号',
   `event_id` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '事件ID(对外幂等标识), 建议全局唯一',
   `event_type` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '事件类型',
-  `webhook_url` varchar(512) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '回调地址(事件生成时快照)',
+  `webhook_url` varchar(512) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '回调地址(事件生成时快照)',
   `payload` json NOT NULL COMMENT '事件载荷(JSON)',
   `status` tinyint NOT NULL DEFAULT 0 COMMENT '投递状态: 0-待发送 1-发送中 2-发送成功 3-发送失败(待重试) 4-终止/放弃',
   `retry_count` int NULL DEFAULT 0 COMMENT '已重试次数',
   `next_retry_time` datetime NULL DEFAULT NULL COMMENT '下一次重试时间',
-  `last_send_time` datetime NOT NULL COMMENT '最后一次发送时间',
+  `last_send_time` datetime NULL DEFAULT NULL COMMENT '最后一次发送时间',
   `last_error` varchar(512) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '最后一次错误信息(简短)',
   `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `update_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
@@ -258,9 +235,5 @@ CREATE TABLE `shop_webhook_event`  (
   INDEX `idx_shop_webhook_event_status_next_retry`(`status` ASC, `next_retry_time` ASC) USING BTREE,
   INDEX `idx_shop_webhook_event_deleted`(`deleted` ASC) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '商户回调事件表' ROW_FORMAT = Dynamic;
-
--- ----------------------------
--- Records of shop_webhook_event
--- ----------------------------
 
 SET FOREIGN_KEY_CHECKS = 1;

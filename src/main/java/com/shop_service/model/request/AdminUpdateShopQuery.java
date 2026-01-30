@@ -1,9 +1,6 @@
 package com.shop_service.model.request;
 
-import jakarta.validation.constraints.Min;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.*;
 import lombok.Data;
 
 import java.math.BigDecimal;
@@ -27,6 +24,7 @@ public class AdminUpdateShopQuery {
      * 商户余额
      */
     @NotNull(message = "请填写商户余额")
+    @DecimalMin(value = "0", message = "商户余额不能小于0")
     private BigDecimal balance;
 
     /**
@@ -59,7 +57,7 @@ public class AdminUpdateShopQuery {
      * 充值费率
      */
     @NotNull(message = "请填写充值费率")
-    @Min(value = 0, message = "充值费率不能小于0")
+    @DecimalMin(value = "0", message = "充值费率不能小于0")
     private BigDecimal rechargeFee;
 
     /**

@@ -96,7 +96,7 @@ public class ShopCardServiceImpl extends ServiceImpl<ShopCardMapper, ShopCard> i
     private void initSyncCardStatus() {
         List<CardInfo> cardInfoList = baseMapper.selectNotDestroyCardInfoList();
         if (cardInfoList == null || cardInfoList.isEmpty()) {
-            log.info("初始化同步卡片状态完成, total=0");
+            log.info("异步初始化同步卡片状态完成, total=0");
             return;
         }
 
@@ -117,10 +117,10 @@ public class ShopCardServiceImpl extends ServiceImpl<ShopCardMapper, ShopCard> i
         }
 
         if (failedIdList.isEmpty()) {
-            log.info("初始化同步卡片状态完成, total={}", cardInfoList.size());
+            log.info("异步初始化同步卡片状态完成, total={}", cardInfoList.size());
         } else {
             log.warn(
-                    "初始化同步卡片状态完成, total={}, failedCount={}",
+                    "异步初始化同步卡片状态完成, total={}, failedCount={}",
                     cardInfoList.size(),
                     failedIdList.size()
             );
@@ -133,7 +133,7 @@ public class ShopCardServiceImpl extends ServiceImpl<ShopCardMapper, ShopCard> i
             VsCardInfo cardInfo = vsApi.getCardInfo(cardId);
             if (cardInfo == null) {
                 failedIdList.add(id);
-                log.error("初始化同步卡片状态失败, 下游返回空, id={}", id);
+                log.error("异步初始化同步卡片状态失败, 下游返回空, id={}", id);
                 return;
             }
             // 加锁执行
@@ -153,7 +153,7 @@ public class ShopCardServiceImpl extends ServiceImpl<ShopCardMapper, ShopCard> i
             });
         } catch (Exception e) {
             failedIdList.add(id);
-            log.error("初始化同步卡片状态异常, id={}, message={}", id, e.getMessage(), e);
+            log.error("异步初始化同步卡片状态异常, id={}, message={}", id, e.getMessage(), e);
         }
     }
 
@@ -170,7 +170,7 @@ public class ShopCardServiceImpl extends ServiceImpl<ShopCardMapper, ShopCard> i
             throw new BizException("此卡段不可使用");
         }
         // 校验预留金额是否小于最低标准
-        if (query.getReserveAmount().compareTo(bin.getCreateMinAmount()) > 0) {
+        if (query.getReserveAmount().compareTo(bin.getCreateMinAmount()) < 0) {
             throw new BizException("此卡段预留金额不能小于" + bin.getCreateMinAmount());
         }
         // 校验预留金额是否大于最高标准
@@ -218,7 +218,7 @@ public class ShopCardServiceImpl extends ServiceImpl<ShopCardMapper, ShopCard> i
             if (data.getSuccess()) {
                 // 卡片入库
                 ShopCard card = new ShopCard();
-                BeanUtils.copyProperties(card, cardInfo);
+                BeanUtils.copyProperties(cardInfo, card);
                 // 填充商户信息/持卡人地址
                 card.setShopId(shopInfo.getId());
                 card.setShopNo(shopInfo.getNo());
@@ -241,9 +241,14 @@ public class ShopCardServiceImpl extends ServiceImpl<ShopCardMapper, ShopCard> i
             }
             // 回调商户
             ShopOpenCardResultHookData hookData = new ShopOpenCardResultHookData();
-            BeanUtils.copyProperties(orderObj, hookData);
-            // 如果成功则填充持卡人地址
-            if (hookData.getSuccess()) {
+            BeanUtils.copyProperties(data, hookData);
+            // 如果成功则填充卡片信息&&持卡人地址
+            if (data.getSuccess()) {
+                // 填充卡片信息
+                ShopOpenCardResultHookData.CardInfo hookDataCardInfo = new ShopOpenCardResultHookData.CardInfo();
+                BeanUtils.copyProperties(data.getCardInfo(), hookDataCardInfo);
+                hookData.setCardInfo(hookDataCardInfo);
+                // 填充持卡人账单地址信息
                 ShopOpenCardResultHookData.CardInfo.HolderAddress holderAddress = new ShopOpenCardResultHookData.CardInfo.HolderAddress();
                 BeanUtils.copyProperties(cardInfo.getHolderAddress(), holderAddress);
                 hookData.getCardInfo().setHolderAddress(holderAddress);
@@ -251,7 +256,7 @@ public class ShopCardServiceImpl extends ServiceImpl<ShopCardMapper, ShopCard> i
             shopWebhookEventService.publish(shopInfo, ShopWebhookEventType.OPEN_CARD_RESULT, hookData);
         } finally {
             // 删除redis订单
-            stringRedisTemplate.opsForHash().delete(redisDestroyCardOrder, data.getTransactionId());
+            stringRedisTemplate.opsForHash().delete(redisOpenCardOrder, data.getTransactionId());
         }
     }
 
@@ -307,30 +312,31 @@ public class ShopCardServiceImpl extends ServiceImpl<ShopCardMapper, ShopCard> i
     @Override
     public void destroyCardResultCallback(VsDestroyCardResultCallbackData data) {
         // 查询订单
-        Object orderObj = stringRedisTemplate.opsForHash().get(redisOpenCardOrder, data.getTransactionId());
+        Object orderObj = stringRedisTemplate.opsForHash().get(redisDestroyCardOrder, data.getTransactionId());
         if (orderObj == null) {
             log.warn("vs销卡结果回调 - 交易ID={}, 销卡订单不存在", data.getTransactionId());
             return;
         }
-        String json = Convert.toStr(orderObj);
-        DestroyCardOrder order = JSON.parseObject(json, DestroyCardOrder.class);
-        log.info(
-                "vs销卡结果回调 - 商户ID={}, 卡片ID={}, 交易ID={}, 是否成功={}",
-                order.getShopInfo().getId(),
-                data.getCardId(),
-                data.getTransactionId(),
-                data.getSuccess()
-        );
         try {
+            // 序列化
+            String json = Convert.toStr(orderObj);
+            DestroyCardOrder order = JSON.parseObject(json, DestroyCardOrder.class);
+            log.info(
+                    "vs销卡结果回调 - 商户ID={}, 卡片ID={}, 交易ID={}, 是否成功={}",
+                    order.getShopInfo().getId(),
+                    data.getCardId(),
+                    data.getTransactionId(),
+                    data.getSuccess()
+            );
             // 更新卡片
             updateCardStatus(order.getId(), VsCardStatus.CANCELLED);
             // 回调商户
             ShopDestroyCardResultHookData hookData = new ShopDestroyCardResultHookData();
-            BeanUtils.copyProperties(orderObj, hookData);
+            BeanUtils.copyProperties(data, hookData);
             shopWebhookEventService.publish(order.getShopInfo(), ShopWebhookEventType.DESTROY_CARD_RESULT, hookData);
         } finally {
             // 删除redis订单
-            stringRedisTemplate.opsForHash().delete(redisOpenCardOrder, data.getTransactionId());
+            stringRedisTemplate.opsForHash().delete(redisDestroyCardOrder, data.getTransactionId());
         }
     }
 
@@ -386,21 +392,22 @@ public class ShopCardServiceImpl extends ServiceImpl<ShopCardMapper, ShopCard> i
             log.warn("vs冻卡结果回调 - 交易ID={}, 销卡订单不存在", data.getTransactionId());
             return;
         }
-        String json = Convert.toStr(orderObj);
-        FreezeCardOrder order = JSON.parseObject(json, FreezeCardOrder.class);
-        log.info(
-                "vs冻卡结果回调 - 商户ID={}, 卡片ID={}, 交易ID={}, 是否成功={}",
-                order.getShopInfo().getId(),
-                data.getCardId(),
-                data.getTransactionId(),
-                data.getSuccess()
-        );
         try {
+            // 序列化
+            String json = Convert.toStr(orderObj);
+            FreezeCardOrder order = JSON.parseObject(json, FreezeCardOrder.class);
+            log.info(
+                    "vs冻卡结果回调 - 商户ID={}, 卡片ID={}, 交易ID={}, 是否成功={}",
+                    order.getShopInfo().getId(),
+                    data.getCardId(),
+                    data.getTransactionId(),
+                    data.getSuccess()
+            );
             // 更新卡片
             updateCardStatus(order.getId(), VsCardStatus.FROZEN);
             // 回调商户
             ShopFreezeCardResultHookData hookData = new ShopFreezeCardResultHookData();
-            BeanUtils.copyProperties(orderObj, hookData);
+            BeanUtils.copyProperties(data, hookData);
             shopWebhookEventService.publish(order.getShopInfo(), ShopWebhookEventType.FROZEN_CARD_RESULT, hookData);
         } finally {
             // 删除redis订单
@@ -437,7 +444,7 @@ public class ShopCardServiceImpl extends ServiceImpl<ShopCardMapper, ShopCard> i
         // 校验卡片
         ShopCard card = checkCard(shopInfo.getId(), query.getCardId());
         // 校验状态
-        if (VsCardStatus.CANCELLED.getValue() != card.getStatus()) {
+        if (VsCardStatus.FROZEN.getValue() != card.getStatus()) {
             throw new BizException("当前状态不可解冻卡片");
         }
         // 注销卡片
@@ -460,21 +467,22 @@ public class ShopCardServiceImpl extends ServiceImpl<ShopCardMapper, ShopCard> i
             log.warn("vs解冻卡片结果回调 - 交易ID={}, 解冻卡片订单不存在", data.getTransactionId());
             return;
         }
-        String json = Convert.toStr(orderObj);
-        UnfreezeCardOrder order = JSON.parseObject(json, UnfreezeCardOrder.class);
-        log.info(
-                "vs解冻卡片结果回调 - 商户ID={}, 卡片ID={}, 交易ID={}, 是否成功={}",
-                order.getShopInfo().getId(),
-                data.getCardId(),
-                data.getTransactionId(),
-                data.getSuccess()
-        );
         try {
+            // 序列化
+            String json = Convert.toStr(orderObj);
+            UnfreezeCardOrder order = JSON.parseObject(json, UnfreezeCardOrder.class);
+            log.info(
+                    "vs解冻卡片结果回调 - 商户ID={}, 卡片ID={}, 交易ID={}, 是否成功={}",
+                    order.getShopInfo().getId(),
+                    data.getCardId(),
+                    data.getTransactionId(),
+                    data.getSuccess()
+            );
             // 更新卡片
             updateCardStatus(order.getId(), VsCardStatus.NORMAL);
             // 回调商户
             ShopUnfreezeCardResultHookData hookData = new ShopUnfreezeCardResultHookData();
-            BeanUtils.copyProperties(orderObj, hookData);
+            BeanUtils.copyProperties(data, hookData);
             shopWebhookEventService.publish(order.getShopInfo(), ShopWebhookEventType.UNFROZEN_CARD_RESULT, hookData);
         } finally {
             // 删除redis订单
@@ -514,6 +522,29 @@ public class ShopCardServiceImpl extends ServiceImpl<ShopCardMapper, ShopCard> i
         // 校验卡片状态
         if (VsCardStatus.NORMAL.getValue() != card.getStatus()) {
             throw new BizException("当前状态不可转账");
+        }
+        // 校验卡头
+        ShopCardBin cardBin = shopCardBinService.checkCardBin(shopInfo.getId(), card.getCardBinId());
+        if (VsCardTransferType.TRANSFER_IN.equals(transferType)) {
+            // 校验最低转入标准
+            if (query.getAmount().compareTo(cardBin.getRechargeMinAmount()) < 0) {
+                throw new BizException("此卡段转入金额不能小于" + cardBin.getRechargeMinAmount());
+            }
+            // 校验最高转入标准
+            if (cardBin.getRechargeMaxAmount().compareTo(BigDecimal.ZERO) > 0
+                    && query.getAmount().compareTo(cardBin.getRechargeMaxAmount()) > 0) {
+                throw new BizException("此卡段转入金额不能大于" + cardBin.getRechargeMaxAmount());
+            }
+        } else {
+            // 校验最低转出标准
+            if (query.getAmount().compareTo(cardBin.getWithdrawMinAmount()) < 0) {
+                throw new BizException("此卡段转出金额不能小于" + cardBin.getWithdrawMinAmount());
+            }
+            // 校验最高转出标准
+            if (cardBin.getWithdrawMaxAmount().compareTo(BigDecimal.ZERO) > 0 &&
+                    query.getAmount().compareTo(cardBin.getWithdrawMaxAmount()) > 0) {
+                throw new BizException("此卡段转出金额不能大于" + cardBin.getWithdrawMaxAmount());
+            }
         }
         // 转账类型
         if (VsCardTransferType.TRANSFER_IN.equals(transferType)) {
@@ -560,6 +591,7 @@ public class ShopCardServiceImpl extends ServiceImpl<ShopCardMapper, ShopCard> i
             return;
         }
         try {
+            // 序列化
             VsCardTransferType transferType = VsCardTransferType.fromValue(data.getTransferType());
             String json = Convert.toStr(orderObj);
             UnfreezeCardOrder order = JSON.parseObject(json, UnfreezeCardOrder.class);
@@ -574,19 +606,35 @@ public class ShopCardServiceImpl extends ServiceImpl<ShopCardMapper, ShopCard> i
             );
             // 是否失败
             if (!data.getSuccess()) {
-                // 商户退款
-                String remark = String.format("卡片转账失败退款, 卡片ID=%s", data.getCardId());
-                shopService.addBalance(
-                        order.getShopInfo().getId(),
-                        data.getAmount(),
-                        ShopFundDetailType.OPEN_CARD_FAIL_BACK,
-                        "转账交易ID: " + data.getTransactionId(),
-                        remark
-                );
+                // 是否转入失败
+                if (VsCardTransferType.TRANSFER_IN.getValue() == data.getTransferType()) {
+                    // 商户退款
+                    String remark = String.format("卡片转入失败退款, 卡片ID=%s, 金额=%s", data.getCardId(), data.getAmount());
+                    shopService.addBalance(
+                            order.getShopInfo().getId(),
+                            data.getAmount(),
+                            ShopFundDetailType.OPEN_CARD_FAIL_BACK,
+                            "转账交易ID: " + data.getTransactionId(),
+                            remark
+                    );
+                }
+            } else {
+                // 是否转出成功
+                if (VsCardTransferType.TRANSFER_OUT.getValue() == data.getTransferType()) {
+                    // 商户入款
+                    String remark = String.format("卡片转出成功, 卡片ID=%s, 金额=%s", data.getCardId(), data.getAmount());
+                    shopService.addBalance(
+                            order.getShopInfo().getId(),
+                            data.getAmount(),
+                            ShopFundDetailType.CARD_TRANSFER_OUT,
+                            "转账交易ID: " + data.getTransactionId(),
+                            remark
+                    );
+                }
             }
             // 回调商户
             ShopCardTransferResultHookData hookData = new ShopCardTransferResultHookData();
-            BeanUtils.copyProperties(orderObj, hookData);
+            BeanUtils.copyProperties(data, hookData);
             shopWebhookEventService.publish(order.getShopInfo(), ShopWebhookEventType.CARD_TRANSFER_RESULT, hookData);
         } finally {
             // 删除redis订单

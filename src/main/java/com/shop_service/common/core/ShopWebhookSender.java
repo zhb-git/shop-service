@@ -41,53 +41,31 @@ import java.time.Instant;
  **/
 @Slf4j
 public class ShopWebhookSender {
-
-    /**
-     * HttpClient 复用(线程安全)
-     * connectTimeout 不要过大, 真实超时由 HttpRequest.timeout 控制
-     */
+    // HttpClient 复用(线程安全) connectTimeout 不要过大, 真实超时由 HttpRequest.timeout 控制
     private static final HttpClient HTTP_CLIENT = HttpClient.newBuilder()
             .connectTimeout(Duration.ofSeconds(3))
             .build();
 
-    // region Header constants
-
-    /**
-     * 商户号请求头
-     */
+    // 商户号请求头
     public static final String HEADER_SHOP_NO = "X-Shop-No";
 
-    /**
-     * 时间戳请求头(秒)
-     */
+    // 时间戳请求头(秒)
     public static final String HEADER_TIMESTAMP = "X-Timestamp";
 
-    /**
-     * 回调签名请求头(Base64)
-     */
+    // 回调签名请求头(Base64)
     public static final String HEADER_SIGNATURE = "X-Signature";
 
-    /**
-     * 事件ID请求头(用于幂等)
-     */
+    // 事件ID请求头(用于幂等)
     public static final String HEADER_EVENT_ID = "X-Event-Id";
 
-    /**
-     * 事件类型请求头
-     */
+    // 事件类型请求头
     public static final String HEADER_EVENT_TYPE = "X-Event-Type";
 
-    /**
-     * Content-Type
-     */
+    // Content-Type
     public static final String HEADER_CONTENT_TYPE = "Content-Type";
 
-    /**
-     * JSON Content-Type
-     */
+    // JSON Content-Type
     public static final String CONTENT_TYPE_JSON = "application/json";
-
-    // endregion
 
     /**
      * 发送商户回调
@@ -96,7 +74,7 @@ public class ShopWebhookSender {
      * @param event 回调事件(至少包含: callbackUrl, eventId, eventType, payload)
      * @return SendResult 发送结果(是否成功, httpCode, 响应内容/错误信息)
      */
-    public static SendResult send(ShopInfo shop, ShopWebhookEvent event) {
+    public static SendResult execute(ShopInfo shop, ShopWebhookEvent event) {
         String url = event.getWebhookUrl();
         String rawBody = event.getPayload() == null ? "" : event.getPayload();
 

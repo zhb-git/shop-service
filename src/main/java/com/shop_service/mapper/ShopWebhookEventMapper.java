@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.shop_service.model.entity.ShopWebhookEvent;
+import com.shop_service.model.pojo.DueEvent;
 import com.shop_service.model.request.AdminShopWebhookEventPageQuery;
 import com.shop_service.model.response.AdminShopWebhookEventVo;
 import org.apache.ibatis.annotations.Param;
@@ -27,10 +28,10 @@ public interface ShopWebhookEventMapper extends BaseMapper<ShopWebhookEvent> {
      * - order by next_retry_time asc (null优先)
      * - limit
      */
-    List<Long> selectDueEventIdList(@Param("now") LocalDateTime now,
-                                    @Param("limit") int limit,
-                                    @Param("pendingStatus") Integer pendingStatus,
-                                    @Param("failedRetryStatus") Integer failedRetryStatus);
+    List<DueEvent> selectDueEventList(@Param("now") LocalDateTime now,
+                                      @Param("limit") int limit,
+                                      @Param("pendingStatus") Integer pendingStatus,
+                                      @Param("failedRetryStatus") Integer failedRetryStatus);
 
     /**
      * 分页查询
