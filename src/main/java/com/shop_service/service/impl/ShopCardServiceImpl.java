@@ -9,7 +9,6 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.shop_service.common.constant.*;
 import com.shop_service.common.core.LockKeyProduce;
 import com.shop_service.common.core.RedissonLockExecutor;
-import com.shop_service.common.core.RespPageConvert;
 import com.shop_service.common.core.VsApi;
 import com.shop_service.common.utils.MpQueryFill;
 import com.shop_service.exception.BizException;
@@ -38,6 +37,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Queue;
@@ -275,7 +275,24 @@ public class ShopCardServiceImpl extends ServiceImpl<ShopCardMapper, ShopCard> i
                 .orderByDesc(ShopCard::getCreateTime)
                 .orderByDesc(ShopCard::getId);
         Page<ShopCard> page = baseMapper.selectPage(new Page<>(query.getPageNum(), query.getPageSize()), wrapper);
-        return RespPageConvert.convert(page, ShopCardVo.class);
+        // 构建分页结果
+        RespPage<ShopCardVo> resp = new RespPage<>();
+        // 排除records
+        BeanUtils.copyProperties(page, resp, "records");
+        // 重构vo
+        List<ShopCardVo> voList = new ArrayList<>();
+        for (ShopCard shopCard : page.getRecords()) {
+            ShopCardVo vo = new ShopCardVo();
+            // 手动填充账单地址
+            BeanUtils.copyProperties(shopCard, vo, "holderAddress");
+            // 填充账单地址
+            ShopCardVo.HolderAddress holderAddress = new ShopCardVo.HolderAddress();
+            BeanUtils.copyProperties(shopCard.getHolderAddress(), holderAddress);
+            vo.setHolderAddress(holderAddress);
+            voList.add(vo);
+        }
+        resp.setRecords(voList);
+        return resp;
     }
 
     @Override
@@ -752,7 +769,12 @@ public class ShopCardServiceImpl extends ServiceImpl<ShopCardMapper, ShopCard> i
     public ShopCardInfoVo getCardInfo(ShopInfo shopInfo, String cardId) {
         ShopCard card = checkCard(shopInfo.getId(), cardId);
         ShopCardInfoVo vo = new ShopCardInfoVo();
-        BeanUtils.copyProperties(card, vo);
+        // 手动填充账单地址
+        BeanUtils.copyProperties(card, vo, "holderAddress");
+        // 填充账单地址
+        ShopCardInfoVo.HolderAddress holderAddress = new ShopCardInfoVo.HolderAddress();
+        BeanUtils.copyProperties(card.getHolderAddress(), holderAddress);
+        vo.setHolderAddress(holderAddress);
         return vo;
     }
 

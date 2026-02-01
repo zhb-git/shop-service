@@ -52,8 +52,9 @@ public interface IShopWebhookEventService extends IService<ShopWebhookEvent> {
      * 发送回调
      * @param shopInfo 商户信息
      * @param id       系统回调事件ID
+     * @param isFirst  是否首发
      */
-    void sendWebhook(ShopInfo shopInfo, Long id);
+    void sendWebhook(ShopInfo shopInfo, Long id, boolean isFirst);
 
     /**
      * 分页查询

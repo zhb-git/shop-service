@@ -58,10 +58,12 @@ public class ShopWebhookDispatchJob {
     @Scheduled(fixedDelay = 1000)
     public void job() {
         // waitSeconds=0, 拿不到锁就跳过(高并发下避免堆积)
+        log.debug("[商户回调-定时扫描发送任务] 开始执行");
         redissonLockExecutor.execute(DISPATCH_LOCK_ID, 0, () -> {
             doDispatch();
             return null;
         });
+        log.debug("[商户回调-定时扫描发送任务] 执行完成");
     }
 
     private void doDispatch() {
@@ -81,7 +83,7 @@ public class ShopWebhookDispatchJob {
                 // 查询商户信息
                 ShopInfo shopInfo = shopService.getShopInfoById(event.getShopId());
                 // 异步执行
-                futures[idx.getAndIncrement()] = CompletableFuture.runAsync(() -> shopWebhookEventService.sendWebhook(shopInfo, event.getId()), taskExecutor);
+                futures[idx.getAndIncrement()] = CompletableFuture.runAsync(() -> shopWebhookEventService.sendWebhook(shopInfo, event.getId(), false), taskExecutor);
             }
 
             // 等待本批任务完成

@@ -66,7 +66,7 @@ public class ShopCardInfoVo {
     /**
      * 持卡人账单地址
      */
-    private ShopCardVo.HolderAddress holderAddress;
+    private HolderAddress holderAddress;
 
     /**
      * 卡片状态

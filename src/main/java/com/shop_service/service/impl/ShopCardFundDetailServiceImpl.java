@@ -79,7 +79,7 @@ public class ShopCardFundDetailServiceImpl extends ServiceImpl<ShopCardFundDetai
         // 通知商户
         ShopCardFundDetailHookData hookData = new ShopCardFundDetailHookData();
         BeanUtils.copyProperties(data,hookData);
-        shopWebhookEventService.publish(shopInfo, ShopWebhookEventType.CARD_FUNDS_DETAILS, hookData);
+        shopWebhookEventService.publish(shopInfo, ShopWebhookEventType.CARD_FUND_DETAIL, hookData);
     }
 
     @Override

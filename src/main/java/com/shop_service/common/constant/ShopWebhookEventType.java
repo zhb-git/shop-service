@@ -14,7 +14,7 @@ import lombok.Getter;
 public enum ShopWebhookEventType {
     // 交易与账单
     CARD_TRANSFER_RESULT("CardTransferResult", "卡片转账结果"),
-    CARD_FUNDS_DETAILS("CardFundsDetails", "卡片资金明细"),
+    CARD_FUND_DETAIL("CardFundDetail", "卡片资金明细"),
     CARD_OVERSPEND("CardOverspend", "卡片超支"),
     CARD_SETTLEMENT("CardSettlement", "卡片超支结算"),
 

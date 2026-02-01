@@ -119,9 +119,9 @@ public class ShopWebhookSender {
     /**
      * 截断响应体/错误信息, 避免日志和数据库字段过长
      */
-    private static String safe(String s) {
-        if (s == null) return null;
-        return s.length() > 500 ? s.substring(0, 500) : s;
+    private static String safe(String str) {
+        if (str == null) return null;
+        return str.length() > 500 ? str.substring(0, 500) : str;
     }
 
     /**

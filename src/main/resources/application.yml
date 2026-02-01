@@ -5,7 +5,7 @@ spring:
     name: 商户服务
   # 环境配置
   profiles:
-    active: prod
+    active: dev
   # 线程配置
   threads:
     virtual:

@@ -82,8 +82,10 @@ public class ShopWebhookEventServiceImpl extends ServiceImpl<ShopWebhookEventMap
             throw new BizException("商户回调时间新增失败");
         }
 
-        // 发送回调 (首发)
-        sendWebhook(shopInfo, event.getId());
+        if (isSend) {
+            // 发送回调 (首发)
+            sendWebhook(shopInfo, event.getId(), true);
+        }
     }
 
     @Override
@@ -97,24 +99,27 @@ public class ShopWebhookEventServiceImpl extends ServiceImpl<ShopWebhookEventMap
     }
 
     @Override
-    public void sendWebhook(ShopInfo shopInfo, Long id) {
+    public void sendWebhook(ShopInfo shopInfo, Long id, boolean isFirst) {
         // 加锁执行
         String lock = LockKeyProduce.produce(LockServiceType.SHOP_WEBHOOK_EVENT, id);
         redissonLockExecutor.execute(lock, () -> {
             // 查询事件
             ShopWebhookEvent event = getById(id);
 
-            // 校验状态, 防止重复发, 只发状态: 待发送 or 发送失败(待重试)
-            if (ShopWebhookStatus.PENDING.getValue() != event.getStatus() &&
-                    ShopWebhookStatus.FAILED_RETRY.getValue() != event.getStatus()) {
-                return;
+            // 非首发则校验条件
+            if (!isFirst) {
+                // 校验状态, 防止重复发, 只发状态: 待发送 or 发送失败(待重试)
+                if (ShopWebhookStatus.PENDING.getValue() != event.getStatus() &&
+                        ShopWebhookStatus.FAILED_RETRY.getValue() != event.getStatus()) {
+                    return;
+                }
             }
 
             LocalDateTime nowTime = LocalDateTime.now();
 
             try {
                 // 领取任务: 仅允许 PENDING/FAILED_RETRY 且到期的记录标记为 SENDING
-                boolean picked = markSending(event.getId(), nowTime);
+                boolean picked = markSending(event.getId(), nowTime, isFirst);
                 if (!picked) {
                     return;
                 }
@@ -143,6 +148,7 @@ public class ShopWebhookEventServiceImpl extends ServiceImpl<ShopWebhookEventMap
 
                 // 发送回调
                 ShopWebhookSender.SendResult result = ShopWebhookSender.execute(shopInfo, event);
+                log.info("商户[{} / {}]回调事件 - 系统事件ID={}, 回调响应: {} / {}", shopInfo.getNo(), shopInfo.getName(), id, result.httpCode(), result.message());
 
                 // 更新状态
                 if (result.ok()) {
@@ -202,22 +208,27 @@ public class ShopWebhookEventServiceImpl extends ServiceImpl<ShopWebhookEventMap
      * - 只有当事件当前状态为 PENDING/FAILED_RETRY 且已到期时, 才会更新为 SENDING
      * - 领取成功返回 true, 否则返回 false(表示已被其他线程/任务领取或不满足条件)
      *
-     * @param id  事件表主键
-     * @param now 当前时间
+     * @param id      事件表主键
+     * @param now     当前时间
+     * @param isFirst 是否首发
      * @return 是否领取成功
      */
-    private boolean markSending(Long id, LocalDateTime now) {
+    private boolean markSending(Long id, LocalDateTime now, boolean isFirst) {
         String lock = LockKeyProduce.produce(LockServiceType.SHOP_WEBHOOK_EVENT, id);
         return redissonLockExecutor.execute(lock, () -> {
             // 更新状态 && 最后发送时间
             LambdaUpdateWrapper<ShopWebhookEvent> uw = new LambdaUpdateWrapper<>();
             uw.eq(ShopWebhookEvent::getId, id);
-            uw.in(ShopWebhookEvent::getStatus,
-                    ShopWebhookStatus.PENDING.getValue(),
-                    ShopWebhookStatus.FAILED_RETRY.getValue()
-            );
-            uw.and(w -> w.isNull(ShopWebhookEvent::getNextRetryTime).or().le(ShopWebhookEvent::getNextRetryTime, now));
+            // 非首发则校验附加条件
+            if (!isFirst) {
+                uw.in(ShopWebhookEvent::getStatus,
+                        ShopWebhookStatus.PENDING.getValue(),
+                        ShopWebhookStatus.FAILED_RETRY.getValue()
+                );
+                uw.and(w -> w.isNull(ShopWebhookEvent::getNextRetryTime).or().le(ShopWebhookEvent::getNextRetryTime, now));
+            }
 
+            // 更新状态
             uw.set(ShopWebhookEvent::getStatus, ShopWebhookStatus.SENDING.getValue());
             uw.set(ShopWebhookEvent::getLastSendTime, now);
             uw.set(ShopWebhookEvent::getUpdateTime, LocalDateTime.now());

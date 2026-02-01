@@ -41,7 +41,7 @@ spring:
   boot:
     admin:
       client:
-        url: http://127.0.0.1:8082
+        url:
 
 # mybatis-plus配置
 mybatis-plus:
