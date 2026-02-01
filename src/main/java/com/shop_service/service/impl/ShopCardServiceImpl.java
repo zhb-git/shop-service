@@ -21,10 +21,7 @@ import com.shop_service.model.response.RespPage;
 import com.shop_service.model.response.ShopCardBalanceVo;
 import com.shop_service.model.response.ShopCardInfoVo;
 import com.shop_service.model.response.ShopCardVo;
-import com.shop_service.service.IShopCardBinService;
-import com.shop_service.service.IShopCardService;
-import com.shop_service.service.IShopService;
-import com.shop_service.service.IShopWebhookEventService;
+import com.shop_service.service.*;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
@@ -67,6 +64,9 @@ public class ShopCardServiceImpl extends ServiceImpl<ShopCardMapper, ShopCard> i
 
     @Resource
     private RedissonLockExecutor redissonLockExecutor;
+
+    @Resource
+    private IShopFundDetailService shopFundDetailService;
 
     @Resource(name = "applicationTaskExecutor")
     private TaskExecutor taskExecutor;
@@ -182,9 +182,11 @@ public class ShopCardServiceImpl extends ServiceImpl<ShopCardMapper, ShopCard> i
         BigDecimal subAmount = query.getReserveAmount().add(bin.getCreateAmount());
         // 商户扣款
         String remark = String.format("开卡扣款, 卡头ID=%s", query.getBinId());
-        shopService.subBalance(shopInfo.getId(), subAmount, ShopFundDetailType.OPEN_CARD_SUB, "无", remark);
+        IShopService.ChangeBalanceResult changeBalanceResult = shopService.subBalance(shopInfo.getId(), subAmount, ShopFundDetailType.OPEN_CARD_SUB, "无", remark);
         // 发起开卡
         String txId = vsApi.openCard(bin.getCardBinId(), query.getReserveAmount());
+        // 更新资金明细bizNo
+        shopFundDetailService.updateBizNo(changeBalanceResult.fundDetailId(), txId);
         // 写入redis
         OpenCardOrder order = new OpenCardOrder();
         order.setShopInfo(shopInfo);
@@ -564,10 +566,11 @@ public class ShopCardServiceImpl extends ServiceImpl<ShopCardMapper, ShopCard> i
             }
         }
         // 转账类型
+        IShopService.ChangeBalanceResult changeBalanceResult = null;
         if (VsCardTransferType.TRANSFER_IN.equals(transferType)) {
             // 商户扣款
             String remark = String.format("卡片转入, 卡片ID=%s", query.getCardId());
-            shopService.subBalance(
+            changeBalanceResult = shopService.subBalance(
                     shopInfo.getId(),
                     query.getAmount(),
                     ShopFundDetailType.CARD_TRANSFER_IN,
@@ -584,6 +587,10 @@ public class ShopCardServiceImpl extends ServiceImpl<ShopCardMapper, ShopCard> i
         }
         // 发起转账
         String txId = vsApi.cardTransfer(card.getCardId(), transferType, query.getAmount());
+        if (VsCardTransferType.TRANSFER_IN.equals(transferType)) {
+            // 更新资金明细bizNo
+            shopFundDetailService.updateBizNo(changeBalanceResult.fundDetailId(), txId);
+        }
         // 写入redis
         CardTransferOrder order = new CardTransferOrder();
         order.setShopInfo(shopInfo);

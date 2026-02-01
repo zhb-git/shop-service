@@ -2,6 +2,12 @@
 server:
   port: 8080
   shutdown: graceful
+  servlet:
+    encoding:
+      charset: UTF-8
+      enabled: true
+      force: true
+      force-response: true
 
 # 日志级别配置
 logging:
@@ -69,7 +75,7 @@ management:
 
 # 系统配置
 system:
-  domain: https://shop-service.vspay.uk
+  domain: https://staging-shop-api.pxkgpmve.cn
   admin-token: 73c3632d-e7de-4865-9c28-3dd966d59f29
 
 # 波场配置
@@ -80,5 +86,5 @@ tron:
 
 # vs卡片服务配置
 vs:
-  api: https://card-service.vspay.uk
-  token: 28abbd65-14a4-42cf-85fe-6b4583957e5f
+  api: https://staging-card.pxkgpmve.cn
+  token: 462e58d0-0960-49b1-acd2-6038fcfaf222

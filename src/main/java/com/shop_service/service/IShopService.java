@@ -21,12 +21,14 @@ import java.math.BigDecimal;
 public interface IShopService extends IService<Shop> {
     /**
      * 创建商户
+     *
      * @param query 参数
      */
     void create(AdminCreateShopQuery query);
 
     /**
      * 分页查询
+     *
      * @param query 参数
      * @return 结果
      */
@@ -34,24 +36,28 @@ public interface IShopService extends IService<Shop> {
 
     /**
      * 更新商户
+     *
      * @param query 参数
      */
     void update(AdminUpdateShopQuery query);
 
     /**
      * 重置商户公钥
+     *
      * @param query 参数
      */
     void resetShopPublicKey(AdminResetShopPublicKeyQuery query);
 
     /**
      * 重置商户回调签名密钥
+     *
      * @param query 参数
      */
     void resetShopCallbackSecret(AdminResetCallbackSecretQuery query);
 
     /**
      * 认证
+     *
      * @param ip        ip地址
      * @param shopNo    商户号
      * @param publicKey 公钥
@@ -61,6 +67,7 @@ public interface IShopService extends IService<Shop> {
 
     /**
      * 获取商户信息
+     *
      * @param shopId 商户ID
      * @return 商户信息
      */
@@ -68,6 +75,7 @@ public interface IShopService extends IService<Shop> {
 
     /**
      * 获取商户信息
+     *
      * @param shopId 商户ID
      * @return 商户信息
      */
@@ -75,6 +83,7 @@ public interface IShopService extends IService<Shop> {
 
     /**
      * 获取商户信息
+     *
      * @param shopNo 商户号
      * @return 商户信息
      */
@@ -82,12 +91,14 @@ public interface IShopService extends IService<Shop> {
 
     /**
      * 商户充值地址转账事件处理
+     *
      * @param transfer 转账
      */
     void rechargeAddressTransfer(TronAddressControlTransfer transfer);
 
     /**
      * 添加商户余额
+     *
      * @param shopId         商户ID
      * @param amount         金额
      * @param fundDetailType 资金明细类型
@@ -98,11 +109,19 @@ public interface IShopService extends IService<Shop> {
 
     /**
      * 扣除商户余额
+     *
      * @param shopId         商户ID
      * @param amount         金额
      * @param fundDetailType 资金明细类型
      * @param bizNo          业务单号
      * @param remark         备注
      */
-    void subBalance(Long shopId, BigDecimal amount, ShopFundDetailType fundDetailType, String bizNo, String remark);
+    ChangeBalanceResult subBalance(Long shopId, BigDecimal amount, ShopFundDetailType fundDetailType, String bizNo, String remark);
+
+    /**
+     * 余额变更结果
+     * @param fundDetailId 资金明细ID
+     */
+    record ChangeBalanceResult(Long fundDetailId) {
+    }
 }

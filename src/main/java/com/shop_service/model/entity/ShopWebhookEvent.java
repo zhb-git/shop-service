@@ -1,5 +1,7 @@
 package com.shop_service.model.entity;
 
+import com.baomidou.mybatisplus.annotation.FieldStrategy;
+import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -42,6 +44,7 @@ public class ShopWebhookEvent extends BaseEntity {
     /**
      * 回调地址(事件生成时快照, 避免商户改地址影响历史事件)
      */
+    @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private String webhookUrl;
 
     /**
@@ -58,20 +61,24 @@ public class ShopWebhookEvent extends BaseEntity {
     /**
      * 已重试次数
      */
+    @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private Integer retryCount;
 
     /**
      * 下一次重试时间
      */
+    @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private LocalDateTime nextRetryTime;
 
     /**
      * 最后一次发送时间
      */
+    @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private LocalDateTime lastSendTime;
 
     /**
      * 最后一次错误信息(简短)
      */
+    @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private String lastError;
 }

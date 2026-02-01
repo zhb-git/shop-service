@@ -50,6 +50,13 @@ public class AdminShopController {
      */
     @PostMapping("/update")
     R<String> update(@RequestBody @Valid AdminUpdateShopQuery query) {
+        // 是否启用webhook
+        if (query.getWebhookEnabled()) {
+            // 是否存在回调url
+            if (query.getWebhookUrl() == null) {
+                return R.fail("若启用回调则需要填写回调url");
+            }
+        }
         shopService.update(query);
         return R.success();
     }

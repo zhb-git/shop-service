@@ -175,6 +175,7 @@ public class ShopServiceImpl extends ServiceImpl<ShopMapper, Shop> implements IS
             BeanUtils.copyProperties(shop, shopInfo);
             setRedisShopInfo(shopInfo);
             log.info("商户更新成功 - 商户ID={}, 商户号={}, 商户名字={}", shop.getId(), shop.getNo(), shop.getName());
+            String bizNo = UUID.randomUUID().toString();
             if (amount != null) {
                 // 新增资金明细
                 ShopFundDetail detail = new ShopFundDetail();
@@ -186,7 +187,7 @@ public class ShopServiceImpl extends ServiceImpl<ShopMapper, Shop> implements IS
                 detail.setAmount(amount);
                 detail.setBalanceBefore(beforeBalance);
                 detail.setBalanceAfter(afterBalance);
-                detail.setBizNo("管理员操作");
+                detail.setBizNo("管理员操作-" + bizNo);
                 String remark = String.format("管理员更新商户信息, 原余额: %s, 新余额: %s", beforeBalance, afterBalance);
                 detail.setRemark(remark);
                 shopFundDetailService.create(detail);
@@ -200,7 +201,7 @@ public class ShopServiceImpl extends ServiceImpl<ShopMapper, Shop> implements IS
                 record.setFeeAmount(BigDecimal.valueOf(0.00));
                 record.setDepositAmount(amount);
                 record.setManner(ShopRechargeManner.ADMIN.getValue());
-                String credential = "管理员更新商户信息操作";
+                String credential = "管理员更新商户信息操作-" + bizNo;
                 record.setCredential(credential);
                 shopRechargeRecordService.create(record);
                 // 通知商户
@@ -333,11 +334,11 @@ public class ShopServiceImpl extends ServiceImpl<ShopMapper, Shop> implements IS
 
     @Transactional(rollbackFor = Exception.class)
     @Override
-    public void subBalance(Long shopId, BigDecimal amount, ShopFundDetailType fundDetailType, String bizNo, String remark) {
-        changeBalance(shopId, amount, bizNo, remark, fundDetailType, false);
+    public ChangeBalanceResult subBalance(Long shopId, BigDecimal amount, ShopFundDetailType fundDetailType, String bizNo, String remark) {
+        return changeBalance(shopId, amount, bizNo, remark, fundDetailType, false);
     }
 
-    private void changeBalance(Long shopId,
+    private ChangeBalanceResult changeBalance(Long shopId,
                                BigDecimal amount,
                                String bizNo,
                                String remark,
@@ -353,7 +354,7 @@ public class ShopServiceImpl extends ServiceImpl<ShopMapper, Shop> implements IS
         String lock = LockKeyProduce.produce(LockServiceType.SHOP, shopId);
 
         // 加锁执行
-        redissonLockExecutor.execute(lock, () -> {
+        return redissonLockExecutor.execute(lock, () -> {
             Shop shop = baseMapper.selectById(shopId);
             if (shop == null) throw new BizException("商户不存在, shopId=" + shopId);
 
@@ -399,6 +400,10 @@ public class ShopServiceImpl extends ServiceImpl<ShopMapper, Shop> implements IS
                     afterBalance,
                     bizNo,
                     remark
+            );
+
+            return new ChangeBalanceResult(
+                    detail.getId()
             );
         });
     }

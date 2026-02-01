@@ -36,7 +36,6 @@ public class AdminUpdateShopQuery {
     /**
      * 回调url
      */
-    @NotBlank(message = "请填写回调url")
     @Pattern(regexp = "^(http|https)://.*$", message = "请填写正确的回调地址")
     private String webhookUrl;
 

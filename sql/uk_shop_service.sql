@@ -11,7 +11,7 @@
  Target Server Version : 90200
  File Encoding         : 65001
 
- Date: 21/01/2026 18:08:22
+ Date: 01/02/2026 19:49:16
 */
 
 SET NAMES utf8mb4;
@@ -36,8 +36,8 @@ CREATE TABLE `shop`  (
   `tron_recharge_address_private_key` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '波场链充值地址私钥',
   `recharge_fee` decimal(18, 6) NOT NULL COMMENT '充值费率',
   `enabled` tinyint NOT NULL DEFAULT 1 COMMENT '是否启用',
-  `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-  `update_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `create_time` datetime(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) COMMENT '创建时间',
+  `update_time` datetime(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6) COMMENT '更新时间',
   `deleted` tinyint NOT NULL DEFAULT 0 COMMENT '删除逻辑: 0-未删 1-已删',
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE INDEX `uk_shop_no`(`no` ASC) USING BTREE,
@@ -65,16 +65,16 @@ CREATE TABLE `shop_card`  (
   `holder_email` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '持卡人邮箱',
   `holder_address` json NOT NULL COMMENT '持卡人账单地址',
   `status` int NOT NULL COMMENT '卡片状态',
-  `bank_create_time` datetime NOT NULL COMMENT '银行返回的开卡时间',
-  `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-  `update_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `bank_create_time` datetime(6) NOT NULL COMMENT '银行返回的开卡时间',
+  `create_time` datetime(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) COMMENT '创建时间',
+  `update_time` datetime(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6) COMMENT '更新时间',
   `deleted` tinyint NOT NULL DEFAULT 0 COMMENT '删除逻辑: 0-未删 1-已删',
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE INDEX `uk_shop_card_card_id`(`card_id` ASC) USING BTREE,
+  UNIQUE INDEX `idx_shop_card_card_no`(`card_no` ASC) USING BTREE,
   INDEX `idx_shop_card_shop_id`(`shop_id` ASC) USING BTREE,
   INDEX `idx_shop_card_card_bin_id`(`card_bin_id` ASC) USING BTREE,
-  INDEX `idx_shop_card_deleted`(`deleted` ASC) USING BTREE,
-  UNIQUE INDEX `idx_shop_card_card_no`(`card_no` ASC) USING BTREE
+  INDEX `idx_shop_card_deleted`(`deleted` ASC) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '商户卡片表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
@@ -120,8 +120,8 @@ CREATE TABLE `shop_card_bin`  (
   `refuse_rate` decimal(18, 6) NOT NULL COMMENT '销卡拒付率阈值',
   `currency` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '币种',
   `scenes` json NOT NULL COMMENT '适用平台',
-  `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-  `update_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `create_time` datetime(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) COMMENT '创建时间',
+  `update_time` datetime(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6) COMMENT '更新时间',
   `deleted` tinyint NOT NULL DEFAULT 0 COMMENT '删除逻辑: 0-未删 1-已删',
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE INDEX `uk_shop_card_bin_shop_cardbin`(`shop_id` ASC, `card_bin` ASC) USING BTREE,
@@ -152,9 +152,9 @@ CREATE TABLE `shop_card_fund_detail`  (
   `merchant_country` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '商户所属国家代码',
   `related_card_transaction_id` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '关联的原始交易流水ID',
   `status` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '账单状态',
-  `transaction_time` datetime NOT NULL COMMENT '交易发生的时间',
-  `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-  `update_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `transaction_time` datetime(6) NOT NULL COMMENT '交易发生的时间',
+  `create_time` datetime(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) COMMENT '创建时间',
+  `update_time` datetime(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6) COMMENT '更新时间',
   `deleted` tinyint NOT NULL DEFAULT 0 COMMENT '删除逻辑: 0-未删 1-已删',
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_shop_card_fund_detail_shop_id`(`shop_id` ASC) USING BTREE,
@@ -177,8 +177,8 @@ CREATE TABLE `shop_fund_detail`  (
   `balance_after` decimal(18, 2) NOT NULL COMMENT '操作后余额',
   `biz_no` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '关联业务单号, 来源单号',
   `remark` varchar(512) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '备注',
-  `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-  `update_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `create_time` datetime(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) COMMENT '创建时间',
+  `update_time` datetime(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6) COMMENT '更新时间',
   `deleted` tinyint NOT NULL DEFAULT 0 COMMENT '删除逻辑: 0-未删 1-已删',
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_shop_fund_detail_shop_id`(`shop_id` ASC) USING BTREE,
@@ -199,8 +199,8 @@ CREATE TABLE `shop_recharge_record`  (
   `deposit_amount` decimal(18, 2) NOT NULL COMMENT '实际入账',
   `manner` int NOT NULL COMMENT '充值方式',
   `credential` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '充值凭据',
-  `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-  `update_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `create_time` datetime(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) COMMENT '创建时间',
+  `update_time` datetime(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6) COMMENT '更新时间',
   `deleted` tinyint NOT NULL DEFAULT 0 COMMENT '删除逻辑: 0-未删 1-已删',
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE INDEX `uk_shop_recharge_record_manner_credential`(`manner` ASC, `credential` ASC) USING BTREE,
@@ -223,11 +223,11 @@ CREATE TABLE `shop_webhook_event`  (
   `payload` json NOT NULL COMMENT '事件载荷(JSON)',
   `status` tinyint NOT NULL DEFAULT 0 COMMENT '投递状态: 0-待发送 1-发送中 2-发送成功 3-发送失败(待重试) 4-终止/放弃',
   `retry_count` int NULL DEFAULT 0 COMMENT '已重试次数',
-  `next_retry_time` datetime NULL DEFAULT NULL COMMENT '下一次重试时间',
-  `last_send_time` datetime NULL DEFAULT NULL COMMENT '最后一次发送时间',
+  `next_retry_time` datetime(6) NULL DEFAULT NULL COMMENT '下一次重试时间',
+  `last_send_time` datetime(6) NULL DEFAULT NULL COMMENT '最后一次发送时间',
   `last_error` varchar(512) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '最后一次错误信息(简短)',
-  `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-  `update_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `create_time` datetime(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) COMMENT '创建时间',
+  `update_time` datetime(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6) COMMENT '更新时间',
   `deleted` tinyint NOT NULL DEFAULT 0 COMMENT '删除逻辑: 0-未删 1-已删',
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE INDEX `uk_shop_webhook_event_event_id`(`event_id` ASC) USING BTREE,

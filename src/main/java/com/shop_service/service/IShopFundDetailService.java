@@ -15,4 +15,11 @@ public interface IShopFundDetailService extends IService<ShopFundDetail> {
      * @param detail 明细
      */
     void create(ShopFundDetail detail);
+
+    /**
+     * 更新bizNo
+     * @param id    ID
+     * @param bizNo 业务单号
+     */
+    void updateBizNo(Long id, String bizNo);
 }

@@ -1,5 +1,6 @@
 package com.shop_service.model.entity;
 
+import com.baomidou.mybatisplus.annotation.FieldStrategy;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.baomidou.mybatisplus.extension.handlers.JacksonTypeHandler;
@@ -54,6 +55,7 @@ public class Shop extends BaseEntity {
     /**
      * 回调url
      */
+    @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private String webhookUrl;
 
     /**
