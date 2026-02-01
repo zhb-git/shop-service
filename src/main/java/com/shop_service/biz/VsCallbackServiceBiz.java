@@ -15,6 +15,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 
+import java.util.concurrent.TimeUnit;
+
 /**
  * vs回调处理业务类
  *
@@ -51,9 +53,10 @@ public class VsCallbackServiceBiz {
         String lock = LockKeyProduce.produce(LockServiceType.VS_CALLBACK, query.getId());
         redissonLockExecutor.execute(lock, () -> {
             // 验证是否重复处理
-            Boolean member = stringRedisTemplate.opsForSet().isMember(redisUeePayCallbackId, query.getId());
-            if (Boolean.TRUE.equals(member)) {
-                log.info("优易付回调重复 id={}", query.getId());
+            String redisKey = String.format("%s:%s", redisUeePayCallbackId, query.getId());
+            Boolean first = stringRedisTemplate.opsForValue().setIfAbsent(redisKey, "1", 1, TimeUnit.DAYS);
+            if (Boolean.FALSE.equals(first)) {
+                log.info("vs回调重复 id={}", query.getId());
                 throw new BizException("回调重复 id=" + query.getId());
             }
             VsCallbackType callbackType = VsCallbackType.fromValue(query.getType());
