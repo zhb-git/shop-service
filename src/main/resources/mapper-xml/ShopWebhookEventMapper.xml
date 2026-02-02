@@ -17,7 +17,7 @@
 
     <select id="selectAdminShopWebhookEventVoPage" resultType="com.shop_service.model.response.AdminShopWebhookEventVo">
         SELECT
-        e.id, AS id,
+        e.id AS id,
         e.shop_id AS shopId,
         e.shop_no AS shopNo,
         s.shop_name AS shopName,
@@ -25,11 +25,12 @@
         e.event_type AS eventType,
         e.webhook_url AS webhookUrl,
         e.payload AS payload,
-        e.status AS status,
+        e.status AS `status`,
         e.retry_count AS retryCount,
         e.next_retry_time AS nextRetryTime,
         e.last_send_time AS lastSendTime,
-        e.last_error AS lastError
+        e.last_error AS lastError,
+        e.create_time AS createTime
         FROM shop_webhook_event e
         LEFT JOIN shop s ON s.id = e.shop_id
         <where>

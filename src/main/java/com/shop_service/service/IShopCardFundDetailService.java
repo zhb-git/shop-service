@@ -4,7 +4,9 @@ import com.baomidou.mybatisplus.extension.service.IService;
 import com.shop_service.model.entity.ShopCardFundDetail;
 import com.shop_service.model.pojo.ShopInfo;
 import com.shop_service.model.pojo.VsCardFundDetailCallbackData;
+import com.shop_service.model.request.AdminShopCardFundDetailPageQuery;
 import com.shop_service.model.request.ShopCardFundDetailPageQuery;
+import com.shop_service.model.response.AdminShopCardFundDetailVo;
 import com.shop_service.model.response.RespPage;
 import com.shop_service.model.response.ShopCardFundDetailVo;
 
@@ -28,4 +30,11 @@ public interface IShopCardFundDetailService extends IService<ShopCardFundDetail>
      * @return 结果
      */
     RespPage<ShopCardFundDetailVo> getShopCardFundDetailVoPage(ShopInfo shopInfo, ShopCardFundDetailPageQuery query);
+
+    /**
+     * 分页哈希
+     * @param query 参数
+     * @return 结果
+     */
+    RespPage<AdminShopCardFundDetailVo> getAdminShopCardFundDetailVoPage(AdminShopCardFundDetailPageQuery query);
 }

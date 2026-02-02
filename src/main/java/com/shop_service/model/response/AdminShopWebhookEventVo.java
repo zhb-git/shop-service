@@ -79,4 +79,9 @@ public class AdminShopWebhookEventVo {
      * 最后一次错误信息(简短)
      */
     private String lastError;
+
+    /**
+     * 创建时间
+     */
+    private LocalDateTime createTime;
 }

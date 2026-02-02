@@ -1,6 +1,7 @@
 package com.shop_service.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.shop_service.common.constant.ShopWebhookEventType;
@@ -14,7 +15,9 @@ import com.shop_service.model.entity.ShopCardFundDetail;
 import com.shop_service.model.pojo.ShopCardFundDetailHookData;
 import com.shop_service.model.pojo.ShopInfo;
 import com.shop_service.model.pojo.VsCardFundDetailCallbackData;
+import com.shop_service.model.request.AdminShopCardFundDetailPageQuery;
 import com.shop_service.model.request.ShopCardFundDetailPageQuery;
+import com.shop_service.model.response.AdminShopCardFundDetailVo;
 import com.shop_service.model.response.RespPage;
 import com.shop_service.model.response.ShopCardFundDetailVo;
 import com.shop_service.service.IShopCardFundDetailService;
@@ -98,5 +101,11 @@ public class ShopCardFundDetailServiceImpl extends ServiceImpl<ShopCardFundDetai
                 .orderByDesc(ShopCardFundDetail::getId);
         Page<ShopCardFundDetail> page = baseMapper.selectPage(new Page<>(query.getPageNum(), query.getPageSize()), wrapper);
         return RespPageConvert.convert(page, ShopCardFundDetailVo.class);
+    }
+
+    @Override
+    public RespPage<AdminShopCardFundDetailVo> getAdminShopCardFundDetailVoPage(AdminShopCardFundDetailPageQuery query) {
+        IPage<AdminShopCardFundDetailVo> page = baseMapper.selectAdminShopCardFundDetailVoPage(new Page<>(query.getPageNum(), query.getPageSize()), query);
+        return RespPageConvert.convert(page, AdminShopCardFundDetailVo.class);
     }
 }
