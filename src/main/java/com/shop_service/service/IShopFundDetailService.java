@@ -2,6 +2,9 @@ package com.shop_service.service;
 
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.shop_service.model.entity.ShopFundDetail;
+import com.shop_service.model.request.AdminShopFundDetailPageQuery;
+import com.shop_service.model.response.AdminShopFundDetailVo;
+import com.shop_service.model.response.RespPage;
 
 /**
  * 商户资金明细服务层
@@ -22,4 +25,11 @@ public interface IShopFundDetailService extends IService<ShopFundDetail> {
      * @param bizNo 业务单号
      */
     void updateBizNo(Long id, String bizNo);
+
+    /**
+     * 分页查询
+     * @param query 参数
+     * @return 结果
+     */
+    RespPage<AdminShopFundDetailVo> getAdminShopFundDetailVoPage(AdminShopFundDetailPageQuery query);
 }

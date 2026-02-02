@@ -1,10 +1,16 @@
 package com.shop_service.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.shop_service.common.core.RespPageConvert;
 import com.shop_service.exception.BizException;
 import com.shop_service.mapper.ShopFundDetailMapper;
 import com.shop_service.model.entity.ShopFundDetail;
+import com.shop_service.model.request.AdminShopFundDetailPageQuery;
+import com.shop_service.model.response.AdminShopFundDetailVo;
+import com.shop_service.model.response.RespPage;
 import com.shop_service.service.IShopFundDetailService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -36,5 +42,11 @@ public class ShopFundDetailServiceImpl extends ServiceImpl<ShopFundDetailMapper,
         if (baseMapper.update(uw) != 1) {
             throw new BizException("资金明细业务单号更新失败");
         }
+    }
+
+    @Override
+    public RespPage<AdminShopFundDetailVo> getAdminShopFundDetailVoPage(AdminShopFundDetailPageQuery query) {
+        IPage<AdminShopFundDetailVo> page = baseMapper.selectAdminShopFundDetailVoPage(new Page<>(query.getPageNum(), query.getPageSize()), query);
+        return RespPageConvert.convert(page, AdminShopFundDetailVo.class);
     }
 }
