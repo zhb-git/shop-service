@@ -5,10 +5,7 @@ import com.shop_service.common.constant.VsCardTransferType;
 import com.shop_service.model.entity.ShopCard;
 import com.shop_service.model.pojo.*;
 import com.shop_service.model.request.*;
-import com.shop_service.model.response.RespPage;
-import com.shop_service.model.response.ShopCardBalanceVo;
-import com.shop_service.model.response.ShopCardInfoVo;
-import com.shop_service.model.response.ShopCardVo;
+import com.shop_service.model.response.*;
 
 /**
  * 商户卡片服务层
@@ -160,4 +157,11 @@ public interface IShopCardService extends IService<ShopCard> {
      * @return 卡片信息
      */
     ShopCardInfoVo getCardInfo(ShopInfo shopInfo, String cardId);
+
+    /**
+     * 分页查询
+     * @param query 参数
+     * @return 结果
+     */
+    RespPage<AdminShopCardVo> getAdminShopCardVoPage(AdminShopCardPageQuery query);
 }

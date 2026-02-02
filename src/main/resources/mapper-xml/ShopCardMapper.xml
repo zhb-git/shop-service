@@ -10,4 +10,70 @@
         FROM shop_card
         WHERE status != 2 AND deleted = 0
     </select>
+
+    <resultMap id="AdminShopCardVo" type="com.shop_service.model.response.AdminShopCardVo">
+        <result column="shop_id" property="shopId"/>
+        <result column="shop_no" property="shopNo"/>
+        <result column="shop_name" property="shopName"/>
+        <result column="card_id" property="cardId"/>
+        <result column="card_bin_id" property="cardBinId"/>
+        <result column="card_bin" property="cardBin"/>
+        <result column="card_no" property="cardNo"/>
+        <result column="cvv" property="cvv"/>
+        <result column="expire_date" property="expireDate"/>
+        <result column="currency" property="currency"/>
+        <result column="fee" property="fee"/>
+        <result column="holder_username" property="holderUsername"/>
+        <result column="holder_email" property="holderEmail"/>
+        <result column="holder_address" property="holderAddress"
+                typeHandler="com.baomidou.mybatisplus.extension.handlers.JacksonTypeHandler"/>
+        <result column="status" property="status"/>
+        <result column="bank_create_time" property="bankCreateTime"/>
+        <result column="create_time" property="createTime"/>
+    </resultMap>
+
+    <select id="selectAdminShopCardVoPage" resultMap="AdminShopCardVo">
+        SELECT
+            t1.shop_id,
+            t1.shop_no,
+            t2.name AS shop_name,
+            t1.card_id,
+            t1.card_bin_id,
+            t1.card_bin,
+            t1.card_no,
+            t1.cvv,
+            t1.expire_date,
+            t1.currency,
+            t1.fee,
+            t1.holder_username,
+            t1.holder_email,
+            t1.holder_address,
+            t1.status,
+            t1.bank_create_time,
+            t1.create_time
+        FROM shop_card t1
+        LEFT JOIN shop t2 ON t1.shop_id = t2.id
+        <where>
+            AND t1.deleted = 0
+            AND t2.deleted = 0
+            <if test="query != null">
+                <if test="query.shopId != null">
+                    AND t1.shop_id = #{query.shopId}
+                </if>
+                <if test="query.shopNo != null and query.shopNo != ''">
+                    AND t1.shop_no LIKE CONCAT('%', #{query.shopNo}, '%')
+                </if>
+                <if test="query.shopName != null and query.shopName != ''">
+                    AND t2.name LIKE CONCAT('%', #{query.shopName}, '%')
+                </if>
+                <if test="query.cardId != null and query.cardId != ''">
+                    AND t1.card_id LIKE CONCAT('%', #{query.cardId}, '%')
+                </if>
+                <if test="query.cardNo != null and query.cardNo != ''">
+                    AND t1.card_no LIKE CONCAT('%', #{query.cardNo}, '%')
+                </if>
+            </if>
+        </where>
+        ORDER BY t1.create_time DESC, t1.id DESC
+    </select>
 </mapper>

@@ -4,11 +4,13 @@ import cn.hutool.core.convert.Convert;
 import com.alibaba.fastjson2.JSON;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
+import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.shop_service.common.constant.*;
 import com.shop_service.common.core.LockKeyProduce;
 import com.shop_service.common.core.RedissonLockExecutor;
+import com.shop_service.common.core.RespPageConvert;
 import com.shop_service.common.core.VsApi;
 import com.shop_service.common.utils.MpQueryFill;
 import com.shop_service.exception.BizException;
@@ -17,10 +19,7 @@ import com.shop_service.model.entity.ShopCard;
 import com.shop_service.model.entity.ShopCardBin;
 import com.shop_service.model.pojo.*;
 import com.shop_service.model.request.*;
-import com.shop_service.model.response.RespPage;
-import com.shop_service.model.response.ShopCardBalanceVo;
-import com.shop_service.model.response.ShopCardInfoVo;
-import com.shop_service.model.response.ShopCardVo;
+import com.shop_service.model.response.*;
 import com.shop_service.service.*;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
@@ -783,6 +782,12 @@ public class ShopCardServiceImpl extends ServiceImpl<ShopCardMapper, ShopCard> i
         BeanUtils.copyProperties(card.getHolderAddress(), holderAddress);
         vo.setHolderAddress(holderAddress);
         return vo;
+    }
+
+    @Override
+    public RespPage<AdminShopCardVo> getAdminShopCardVoPage(AdminShopCardPageQuery query) {
+        IPage<AdminShopCardVo> page = baseMapper.selectAdminShopCardVoPage(new Page<>(query.getPageNum(), query.getPageSize()), query);
+        return RespPageConvert.convert(page, AdminShopCardVo.class);
     }
 
     private ShopCardBin checkCardBin(Long shopId, Long cardBinId) {
