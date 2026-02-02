@@ -25,10 +25,9 @@
             t1.transaction_time,
             t1.create_time
         FROM shop_card_fund_detail t1
-        LEFT JOIN shop t2 ON t1.shop_id = t2.id
+        LEFT JOIN shop t2 ON t1.shop_id = t2.id ON t2.deleted = 0
         <where>
-            AND t1.deleted = 0
-            AND t2.deleted = 0
+            t1.deleted = 0
             <if test="query != null">
                 <if test="query.shopId != null">
                     AND t1.shop_id = #{query.shopId}

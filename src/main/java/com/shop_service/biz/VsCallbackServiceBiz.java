@@ -42,7 +42,7 @@ public class VsCallbackServiceBiz {
     private IShopCardFundDetailService shopCardFundDetailService;
 
     // redis 回调ID 键
-    private final String redisUeePayCallbackId = "VsCallbackId";
+    private final String redisVsCallbackId = "VsCallbackId";
 
     /**
      * 处理回调
@@ -53,7 +53,7 @@ public class VsCallbackServiceBiz {
         String lock = LockKeyProduce.produce(LockServiceType.VS_CALLBACK, query.getId());
         redissonLockExecutor.execute(lock, () -> {
             // 验证是否重复处理
-            String redisKey = String.format("%s:%s", redisUeePayCallbackId, query.getId());
+            String redisKey = String.format("%s:%s", redisVsCallbackId, query.getId());
             Boolean first = stringRedisTemplate.opsForValue().setIfAbsent(redisKey, "1", 1, TimeUnit.DAYS);
             if (Boolean.FALSE.equals(first)) {
                 log.info("vs回调重复 id={}", query.getId());
@@ -92,7 +92,7 @@ public class VsCallbackServiceBiz {
                 }
             } finally {
                 // 回调id写入redis
-                stringRedisTemplate.opsForSet().add(redisUeePayCallbackId, query.getId());
+                stringRedisTemplate.opsForSet().add(redisVsCallbackId, query.getId());
             }
         });
     }

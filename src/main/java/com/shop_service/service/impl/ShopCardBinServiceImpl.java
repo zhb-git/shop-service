@@ -91,6 +91,20 @@ public class ShopCardBinServiceImpl extends ServiceImpl<ShopCardBinMapper, ShopC
     public void setShopCardBin(AdminSetShopCardBinQuery query) {
         // 校验商户是否存在
         ShopInfo shopInfo = checkShop(query.getShopId());
+        // 查询所有卡头
+        List<VsCardBin> binList = vsApi.getCardBinList();
+        // 校验卡头是否存在
+        VsCardBin cardBin = null;
+        for (VsCardBin bin : binList) {
+            if (bin.getId().equals(query.getCardBinId())) {
+                cardBin = bin;
+                break;
+            }
+        }
+        if (cardBin == null) {
+            throw new BizException("卡头不存在");
+        }
+        final VsCardBin bin = cardBin;
         // 加锁执行
         String lock = LockKeyProduce.produce(LockServiceType.SHOP_CARD_BIN, shopInfo.getId(), query.getCardBinId());
         redissonLockExecutor.execute(lock, () -> {
@@ -101,31 +115,18 @@ public class ShopCardBinServiceImpl extends ServiceImpl<ShopCardBinMapper, ShopC
             if (baseMapper.exists(wrapper)) {
                 throw new BizException("商户已拥有此卡头");
             }
-            // 查询所有卡头
-            List<VsCardBin> binList = vsApi.getCardBinList();
-            // 校验卡头是否存在
-            VsCardBin cardBin = null;
-            for (VsCardBin bin : binList) {
-                if (bin.getId().equals(query.getCardBinId())) {
-                    cardBin = bin;
-                    break;
-                }
-            }
-            if (cardBin == null) {
-                throw new BizException("卡头不存在");
-            }
             // 设置卡头
             ShopCardBin shopCardBin = new ShopCardBin();
-            BeanUtils.copyProperties(cardBin, shopCardBin, "id", "bin", "createAmount");
+            BeanUtils.copyProperties(bin, shopCardBin, "id", "bin", "createAmount");
             shopCardBin.setShopId(shopInfo.getId());
             shopCardBin.setShopNo(shopInfo.getNo());
-            shopCardBin.setCardBinId(cardBin.getId());
-            shopCardBin.setCardBin(cardBin.getBin());
+            shopCardBin.setCardBinId(bin.getId());
+            shopCardBin.setCardBin(bin.getBin());
             shopCardBin.setCreateAmount(query.getCreateAmount());
             if (baseMapper.insert(shopCardBin) != 1) {
                 throw new BizException("商户卡头设置失败");
             }
-            log.info("商户成功设置卡头 - 商户ID={}, 卡头ID={}", shopInfo.getId(), cardBin.getId());
+            log.info("商户成功设置卡头 - 商户ID={}, 卡头ID={}", shopInfo.getId(), bin.getId());
         });
     }
 

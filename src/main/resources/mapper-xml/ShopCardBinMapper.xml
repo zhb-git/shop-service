@@ -127,7 +127,7 @@
                 </if>
             </if>
         </where>
-        ORDER BY scd.create_time DESC, scb.id DESC
+        ORDER BY scb.create_time DESC, scb.id DESC
     </select>
 
     <select id="selectShopIdByCardBinId" resultType="long">

@@ -4,8 +4,10 @@ import com.shop_service.biz.StatsServiceBiz;
 import com.shop_service.model.response.AdminStatsVo;
 import com.shop_service.model.response.R;
 import jakarta.annotation.Resource;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.time.LocalDate;
@@ -24,11 +26,14 @@ public class AdminStatsController {
 
     /**
      * 获取统计信息
-     * @param date 时间
+     *
+     * @param date 时间 (yyyy-MM-dd)
      * @return 响应
      */
     @GetMapping("/get")
-    R<AdminStatsVo> get(LocalDate date) {
+    R<AdminStatsVo> get(
+            @RequestParam(name = "date", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date
+    ) {
         AdminStatsVo stats = statsServiceBiz.getAdminStats(date);
         return R.success(stats);
     }
