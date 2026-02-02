@@ -49,4 +49,19 @@
         </where>
         ORDER BY t1.create_time DESC, t1.id DESC
     </select>
+
+    <select id="selectTotalAmount" resultType="decimal">
+        SELECT
+        COALESCE(SUM(amount), 0)
+        FROM shop_card_fund_detail
+        <where>
+            AND deleted = 0
+            <if test="type != null and type != ''">
+                AND `type` = #{type}
+            </if>
+            <if test="date != null">
+                AND DATE(create_time) = #{date}
+            </if>
+        </where>
+    </select>
 </mapper>

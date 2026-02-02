@@ -1,11 +1,14 @@
 package com.shop_service.service;
 
 import com.baomidou.mybatisplus.extension.service.IService;
+import com.shop_service.common.constant.VsCardStatus;
 import com.shop_service.common.constant.VsCardTransferType;
 import com.shop_service.model.entity.ShopCard;
 import com.shop_service.model.pojo.*;
 import com.shop_service.model.request.*;
 import com.shop_service.model.response.*;
+
+import java.time.LocalDate;
 
 /**
  * 商户卡片服务层
@@ -164,4 +167,12 @@ public interface IShopCardService extends IService<ShopCard> {
      * @return 结果
      */
     RespPage<AdminShopCardVo> getAdminShopCardVoPage(AdminShopCardPageQuery query);
+
+    /**
+     * 获取卡片数量
+     * @param status 状态
+     * @param date   时间
+     * @return 数量
+     */
+    long getCardSize(VsCardStatus status, LocalDate date);
 }

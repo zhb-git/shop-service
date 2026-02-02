@@ -11,6 +11,7 @@ import com.shop_service.model.response.RespPage;
 import com.shop_service.model.response.ShopVo;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 
 /**
  * 商户服务层
@@ -124,4 +125,11 @@ public interface IShopService extends IService<Shop> {
      */
     record ChangeBalanceResult(Long fundDetailId) {
     }
+
+    /**
+     * 获取商户数量
+     * @param date 时间
+     * @return 数量
+     */
+    long getShopSize(LocalDate date);
 }

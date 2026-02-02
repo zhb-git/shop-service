@@ -8,6 +8,9 @@ import com.shop_service.model.request.AdminShopCardFundDetailPageQuery;
 import com.shop_service.model.response.AdminShopCardFundDetailVo;
 import org.apache.ibatis.annotations.Param;
 
+import java.math.BigDecimal;
+import java.time.LocalDate;
+
 /**
  * 商户卡片资金明细
  *
@@ -17,9 +20,18 @@ import org.apache.ibatis.annotations.Param;
 public interface ShopCardFundDetailMapper extends BaseMapper<ShopCardFundDetail> {
     /**
      * 分页查询
+     *
      * @param page  分页
      * @param query 参数
      * @return 结果
      */
     IPage<AdminShopCardFundDetailVo> selectAdminShopCardFundDetailVoPage(Page<?> page, @Param("query") AdminShopCardFundDetailPageQuery query);
+
+    /**
+     * 查询总金额
+     * @param type 类型
+     * @param date 时间
+     * @return 总金额
+     */
+    BigDecimal selectTotalAmount(@Param("type") String type, @Param("date") LocalDate date);
 }

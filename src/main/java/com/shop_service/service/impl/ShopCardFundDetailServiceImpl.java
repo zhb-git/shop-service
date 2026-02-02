@@ -29,6 +29,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
+import java.time.LocalDate;
+
 /**
  * 商户卡片资金明细服务实现类
  *
@@ -107,5 +110,10 @@ public class ShopCardFundDetailServiceImpl extends ServiceImpl<ShopCardFundDetai
     public RespPage<AdminShopCardFundDetailVo> getAdminShopCardFundDetailVoPage(AdminShopCardFundDetailPageQuery query) {
         IPage<AdminShopCardFundDetailVo> page = baseMapper.selectAdminShopCardFundDetailVoPage(new Page<>(query.getPageNum(), query.getPageSize()), query);
         return RespPageConvert.convert(page, AdminShopCardFundDetailVo.class);
+    }
+
+    @Override
+    public BigDecimal getTotalAmount(VsCardFundDetailType detailType, LocalDate date) {
+        return baseMapper.selectTotalAmount(detailType.getValue(), date);
     }
 }

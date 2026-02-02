@@ -14,6 +14,9 @@ import com.shop_service.service.IShopRechargeRecordService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
+import java.time.LocalDate;
+
 /**
  * 商户充值记录服务实现类
  *
@@ -34,5 +37,15 @@ public class ShopRechargeRecordServiceImpl extends ServiceImpl<ShopRechargeRecor
     public RespPage<AdminShopRechargeRecordVo> getAdminShopRechargeRecordVoPage(AdminShopRechargeRecordPageQuery query) {
         IPage<AdminShopRechargeRecordVo> page = baseMapper.selectAdminShopRechargeRecordVoPage(new Page<>(query.getPageNum(), query.getPageSize()), query);
         return RespPageConvert.convert(page, AdminShopRechargeRecordVo.class);
+    }
+
+    @Override
+    public BigDecimal getTotalAmount(LocalDate date) {
+        return baseMapper.selectTotalAmount(date);
+    }
+
+    @Override
+    public BigDecimal getTotalFeeAmount(LocalDate date) {
+        return baseMapper.selectTotalFeeAmount(date);
     }
 }

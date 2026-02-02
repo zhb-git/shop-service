@@ -6,6 +6,9 @@ import com.shop_service.model.request.AdminShopRechargeRecordPageQuery;
 import com.shop_service.model.response.AdminShopRechargeRecordVo;
 import com.shop_service.model.response.RespPage;
 
+import java.math.BigDecimal;
+import java.time.LocalDate;
+
 /**
  * 商户充值记录服务层
  *
@@ -25,4 +28,18 @@ public interface IShopRechargeRecordService extends IService<ShopRechargeRecord>
      * @return 结果
      */
     RespPage<AdminShopRechargeRecordVo> getAdminShopRechargeRecordVoPage(AdminShopRechargeRecordPageQuery query);
+
+    /**
+     * 查询充值金额
+     * @param date 时间
+     * @return 总金额
+     */
+    BigDecimal getTotalAmount(LocalDate date);
+
+    /**
+     * 查询充值手续费
+     * @param date 时间
+     * @return 总手续费
+     */
+    BigDecimal getTotalFeeAmount(LocalDate date);
 }

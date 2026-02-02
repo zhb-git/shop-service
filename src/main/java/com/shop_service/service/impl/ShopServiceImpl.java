@@ -11,6 +11,7 @@ import com.shop_service.common.core.LockKeyProduce;
 import com.shop_service.common.core.RedissonLockExecutor;
 import com.shop_service.common.core.RespPageConvert;
 import com.shop_service.common.core.TronApi;
+import com.shop_service.common.utils.MpTimeRangeUtil;
 import com.shop_service.common.utils.ShopNoGeneratorUtil;
 import com.shop_service.exception.BizException;
 import com.shop_service.mapper.ShopMapper;
@@ -40,6 +41,7 @@ import org.springframework.util.StringUtils;
 import org.tron.trident.core.key.KeyPair;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.UUID;
 import java.util.concurrent.locks.ReentrantLock;
@@ -336,6 +338,16 @@ public class ShopServiceImpl extends ServiceImpl<ShopMapper, Shop> implements IS
     @Override
     public ChangeBalanceResult subBalance(Long shopId, BigDecimal amount, ShopFundDetailType fundDetailType, String bizNo, String remark) {
         return changeBalance(shopId, amount, bizNo, remark, fundDetailType, false);
+    }
+
+    @Override
+    public long getShopSize(LocalDate date) {
+        LambdaQueryWrapper<Shop> wrapper = new LambdaQueryWrapper<>();
+        if (date != null) {
+            // 2026-01-11: >= 2026-01-11 and < 2026-01-12
+            MpTimeRangeUtil.applyDayRange(wrapper, Shop::getCreateTime, date);
+        }
+        return baseMapper.selectCount(wrapper);
     }
 
     private ChangeBalanceResult changeBalance(Long shopId,

@@ -1,6 +1,7 @@
 package com.shop_service.service;
 
 import com.baomidou.mybatisplus.extension.service.IService;
+import com.shop_service.common.constant.VsCardFundDetailType;
 import com.shop_service.model.entity.ShopCardFundDetail;
 import com.shop_service.model.pojo.ShopInfo;
 import com.shop_service.model.pojo.VsCardFundDetailCallbackData;
@@ -9,6 +10,9 @@ import com.shop_service.model.request.ShopCardFundDetailPageQuery;
 import com.shop_service.model.response.AdminShopCardFundDetailVo;
 import com.shop_service.model.response.RespPage;
 import com.shop_service.model.response.ShopCardFundDetailVo;
+
+import java.math.BigDecimal;
+import java.time.LocalDate;
 
 /**
  * 商户卡片资金明细服务层
@@ -37,4 +41,12 @@ public interface IShopCardFundDetailService extends IService<ShopCardFundDetail>
      * @return 结果
      */
     RespPage<AdminShopCardFundDetailVo> getAdminShopCardFundDetailVoPage(AdminShopCardFundDetailPageQuery query);
+
+    /**
+     * 获取总金额
+     * @param detailType 账单类型
+     * @param date       时间
+     * @return 总金额
+     */
+    BigDecimal getTotalAmount(VsCardFundDetailType detailType, LocalDate date);
 }

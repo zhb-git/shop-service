@@ -13,6 +13,7 @@ import com.shop_service.common.core.RedissonLockExecutor;
 import com.shop_service.common.core.RespPageConvert;
 import com.shop_service.common.core.VsApi;
 import com.shop_service.common.utils.MpQueryFill;
+import com.shop_service.common.utils.MpTimeRangeUtil;
 import com.shop_service.exception.BizException;
 import com.shop_service.mapper.ShopCardMapper;
 import com.shop_service.model.entity.ShopCard;
@@ -32,6 +33,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -788,6 +790,19 @@ public class ShopCardServiceImpl extends ServiceImpl<ShopCardMapper, ShopCard> i
     public RespPage<AdminShopCardVo> getAdminShopCardVoPage(AdminShopCardPageQuery query) {
         IPage<AdminShopCardVo> page = baseMapper.selectAdminShopCardVoPage(new Page<>(query.getPageNum(), query.getPageSize()), query);
         return RespPageConvert.convert(page, AdminShopCardVo.class);
+    }
+
+    @Override
+    public long getCardSize(VsCardStatus status, LocalDate date) {
+        LambdaQueryWrapper<ShopCard> wrapper = new LambdaQueryWrapper<>();
+        if (status != null) {
+            wrapper.eq(ShopCard::getStatus, status.getValue());
+        }
+        if (date != null) {
+            // 填充时间条件
+            MpTimeRangeUtil.applyDayRange(wrapper, ShopCard::getCreateTime, date);
+        }
+        return baseMapper.selectCount(wrapper);
     }
 
     private ShopCardBin checkCardBin(Long shopId, Long cardBinId) {

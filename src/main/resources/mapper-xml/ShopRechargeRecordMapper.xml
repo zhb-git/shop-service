@@ -36,4 +36,26 @@
         </where>
         ORDER BY t1.create_time DESC, t1.id DESC
     </select>
+
+    <select id="selectTotalAmount" resultType="decimal">
+        SELECT COALESCE(SUM(amount), 0)
+        FROM shop_recharge_record
+        <where>
+            AND deleted = 0
+            <if test="date != null">
+                AND DATE(create_time) = #{date}
+            </if>
+        </where>
+    </select>
+
+    <select id="selectTotalFeeAmount" resultType="decimal">
+        SELECT COALESCE(SUM(fee_amount), 0)
+        FROM shop_recharge_record
+        <where>
+            AND deleted = 0
+            <if test="date != null">
+                AND DATE(create_time) = #{date}
+            </if>
+        </where>
+    </select>
 </mapper>
