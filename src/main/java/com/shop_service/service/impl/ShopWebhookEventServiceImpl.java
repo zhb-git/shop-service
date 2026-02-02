@@ -158,12 +158,12 @@ public class ShopWebhookEventServiceImpl extends ServiceImpl<ShopWebhookEventMap
 
                 int retry = (event.getRetryCount() == null ? 0 : event.getRetryCount()) + 1;
                 if (retry >= MAX_RETRY) {
-                    markAbandoned(event.getId(), "回调失败次数已达上限, httpCode=" + result.httpCode() + ", 响应=" + safe(result.message()));
+                    markAbandoned(event.getId(), "回调失败次数已达上限, HTTP状态码=" + result.httpCode() + ", 响应=" + safe(result.message()));
                     return;
                 }
 
                 LocalDateTime nextTime = nowTime.plusSeconds(calcDelaySeconds(retry));
-                markFailRetry(event.getId(), retry, nextTime, "回调失败, httpCode=" + result.httpCode() + ", 响应=" + safe(result.message()));
+                markFailRetry(event.getId(), retry, nextTime, "回调失败, HTTP状态码=" + result.httpCode() + ", 响应=" + safe(result.message()));
 
             } catch (Exception ex) {
                 log.warn("商户回调任务异常, 事件数据库ID={}, eventId={}, 异常={}", event.getId(), event.getEventId(), ex.toString());
@@ -393,12 +393,15 @@ public class ShopWebhookEventServiceImpl extends ServiceImpl<ShopWebhookEventMap
         redissonLockExecutor.execute(lock, () -> {
             LambdaUpdateWrapper<ShopWebhookEvent> uw = Wrappers.lambdaUpdate();
             uw.eq(ShopWebhookEvent::getId, id)
+                    // 重置属性
                     .set(ShopWebhookEvent::getStatus, ShopWebhookStatus.PENDING.getValue())
                     .set(ShopWebhookEvent::getRetryCount, 0)
                     .set(ShopWebhookEvent::getNextRetryTime, LocalDateTime.now())
+                    .set(ShopWebhookEvent::getLastSendTime, null)
+                    .set(ShopWebhookEvent::getLastError, null)
                     .set(ShopWebhookEvent::getUpdateTime, LocalDateTime.now());
 
-            int rows = baseMapper.update(null, uw);
+            int rows = baseMapper.update(uw);
             if (rows != 1) {
                 throw new BizException("回调事件重试失败, id=" + id + ", rows=" + rows);
             }
